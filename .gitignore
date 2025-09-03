@@ -1,0 +1,118 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+*.vs/
+
+# Rider
+.idea/
+*.sln.iml
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# StyleCop
+StyleCopReport.xml
+
+# Files built by Visual Studio
+*.obj
+*.exe
+*.exe.config
+*.pdb
+*.dll
+*.dll.config
+*.winmd
+*.log
+
+# NuGet Packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/packages/*
+# except build/, which is used as an MSBuild target.
+!**/packages/build/
+# Uncomment if necessary however generally it will be regenerated when needed
+#!**/packages/repositories.config
+# NuGet v3's project.json files produces more ignorable files
+*.nuget.props
+*.nuget.targets
+
+# Visual Studio Code
+.vscode/
+
+# Mac OS X
+.DS_Store
+
+# Docker
+.dockerignore
+
+# Test results
+TestResults/
+**/TestResults/*
+**/*.TestResults
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# TeamCity
+_TeamCity*
+
+# DotCover
+*.dotCover
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# MightyMoose
+*.mm.*
+AutoTest.Net/
+
+# Web browsers
+*.browser
+
+# Fake framework
+**/packages/FAKE/tools/**/*.exe
+**/packages/FAKE/**/FakeLib.dll
+
+# CodeRush
+.cr/
+
+# Python Tools for Visual Studio
+.PythonTools/
+
+# JustCode
+.JustCode
+
+# OpenCover
+OpenCover/
+
+# Azure Functions
+local.settings.json
+
+# Rider
+*.sln.iml
+
+# .NET Core
+*.deps.json
+*.runtimeconfig.json
