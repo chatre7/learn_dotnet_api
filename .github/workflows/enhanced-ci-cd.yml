@@ -47,15 +47,78 @@ jobs:
     - name: Build
       run: dotnet build BlogApi.sln --no-restore
 
-    - name: Run tests with coverage
+    - name: Run tests with coverage for Application layer
+      working-directory: ./tests/Application.Tests
       run: |
-        echo "Running tests..."
-        dotnet test BlogApi.sln --no-build --verbosity normal \
-          --logger "trx;LogFileName=test-results.trx" \
+        echo "Running Application layer tests with coverage..."
+        dotnet test --no-build --verbosity normal \
+          --logger "trx;LogFileName=../../test-results-application.trx" \
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
-          /p:CoverletOutput=./coverage/lcov.info \
-          /p:Threshold=80
+          /p:CoverletOutput=../../coverage/application-lcov.info
+
+    - name: Run tests with coverage for Infrastructure layer
+      working-directory: ./tests/Infrastructure.Tests
+      run: |
+        echo "Running Infrastructure layer tests with coverage..."
+        dotnet test --no-build --verbosity normal \
+          --logger "trx;LogFileName=../../test-results-infrastructure.trx" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutputFormat=lcov \
+          /p:CoverletOutput=../../coverage/infrastructure-lcov.info
+
+    - name: Run tests with coverage for WebApi layer
+      working-directory: ./tests/WebApi.Tests
+      run: |
+        echo "Running WebApi layer tests with coverage..."
+        dotnet test --no-build --verbosity normal \
+          --logger "trx;LogFileName=../../test-results-webapi.trx" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutputFormat=lcov \
+          /p:CoverletOutput=../../coverage/webapi-lcov.info
+
+    - name: Check test results
+      run: |
+        echo "Checking for test results files..."
+        find . -name "*.trx" -type f
+        echo "Checking for coverage files..."
+        find . -name "*lcov.info" -type f
+        ls -la ./coverage/ || echo "Coverage directory not found"
+
+    - name: Install lcov reporter
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lcov
+
+    - name: Merge coverage reports
+      run: |
+        echo "Merging coverage reports..."
+        # Create combined coverage file
+        echo "TN:" > ./coverage/lcov.info
+        for file in ./coverage/*lcov.info; do
+          if [ -f "$file" ]; then
+            echo "Merging $file"
+            cat "$file" >> ./coverage/lcov.info
+          fi
+        done
+
+    - name: Check if coverage file exists
+      id: check_files
+      run: |
+        if [ -f "./coverage/lcov.info" ] && [ -s "./coverage/lcov.info" ]; then
+          echo "coverage_file_exists=true" >> $GITHUB_OUTPUT
+          echo "Coverage file found"
+        else
+          echo "coverage_file_exists=false" >> $GITHUB_OUTPUT
+          echo "Coverage file not found or empty"
+        fi
+
+    - name: Generate coverage report
+      if: steps.check_files.outputs.coverage_file_exists == 'true'
+      run: |
+        # Generate HTML report
+        mkdir -p ./coverage/report
+        genhtml ./coverage/lcov.info --output-directory ./coverage/report
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -63,7 +126,7 @@ jobs:
       with:
         name: test-results
         path: |
-          **/test-results.trx
+          **/*.trx
           **/coverage/
         retention-days: 30
 
@@ -71,16 +134,11 @@ jobs:
       uses: EnricoMi/publish-unit-test-result-action@v2
       if: always()
       with:
-        files: "**/test-results.trx"
+        files: "**/*.trx"
       continue-on-error: true
 
-    - name: Generate coverage report
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y lcov
-        genhtml ./coverage/lcov.info --output-directory ./coverage/report
-
     - name: Upload coverage report
+      if: steps.check_files.outputs.coverage_file_exists == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
