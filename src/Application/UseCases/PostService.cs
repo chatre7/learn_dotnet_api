@@ -4,15 +4,26 @@ using Domain.Interfaces;
 
 namespace Application.UseCases;
 
+/// <summary>
+/// Service for managing posts in the application.
+/// </summary>
 public class PostService : IPostService
 {
     private readonly IPostRepository _postRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PostService"/> class.
+    /// </summary>
+    /// <param name="postRepository">The post repository.</param>
     public PostService(IPostRepository postRepository)
     {
         _postRepository = postRepository;
     }
 
+    /// <summary>
+    /// Gets all posts asynchronously.
+    /// </summary>
+    /// <returns>A collection of post DTOs.</returns>
     public async Task<IEnumerable<PostDto>> GetAllPostsAsync()
     {
         var posts = await _postRepository.GetAllAsync();
@@ -28,6 +39,11 @@ public class PostService : IPostService
         });
     }
 
+    /// <summary>
+    /// Gets a post by its ID asynchronously.
+    /// </summary>
+    /// <param name="id">The post ID.</param>
+    /// <returns>The post DTO if found; otherwise, null.</returns>
     public async Task<PostDto?> GetPostByIdAsync(int id)
     {
         var post = await _postRepository.GetByIdAsync(id);
@@ -45,6 +61,11 @@ public class PostService : IPostService
         };
     }
 
+    /// <summary>
+    /// Creates a new post asynchronously.
+    /// </summary>
+    /// <param name="createPostDto">The DTO containing post creation data.</param>
+    /// <returns>The created post DTO.</returns>
     public async Task<PostDto> CreatePostAsync(CreatePostDto createPostDto)
     {
         var post = new Domain.Entities.Post
@@ -69,6 +90,13 @@ public class PostService : IPostService
         };
     }
 
+    /// <summary>
+    /// Updates an existing post asynchronously.
+    /// </summary>
+    /// <param name="id">The ID of the post to update.</param>
+    /// <param name="updatePostDto">The DTO containing updated post data.</param>
+    /// <returns>The updated post DTO.</returns>
+    /// <exception cref="Exception">Thrown when no post with the specified ID is found.</exception>
     public async Task<PostDto> UpdatePostAsync(int id, UpdatePostDto updatePostDto)
     {
         var existingPost = await _postRepository.GetByIdAsync(id);
@@ -95,6 +123,11 @@ public class PostService : IPostService
         };
     }
 
+    /// <summary>
+    /// Deletes a post by its ID asynchronously.
+    /// </summary>
+    /// <param name="id">The ID of the post to delete.</param>
+    /// <returns>True if the post was deleted; otherwise, false.</returns>
     public async Task<bool> DeletePostAsync(int id)
     {
         return await _postRepository.DeleteAsync(id);

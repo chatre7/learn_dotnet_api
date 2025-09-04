@@ -3,17 +3,30 @@ using System.Text.Json;
 
 namespace WebApi.Middleware;
 
+/// <summary>
+/// Middleware for handling exceptions globally in the application.
+/// </summary>
 public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExceptionHandlingMiddleware"/> class.
+    /// </summary>
+    /// <param name="next">The next middleware in the pipeline.</param>
+    /// <param name="logger">The logger instance.</param>
     public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Invokes the middleware asynchronously.
+    /// </summary>
+    /// <param name="context">The HTTP context.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -27,6 +40,12 @@ public class ExceptionHandlingMiddleware
         }
     }
 
+    /// <summary>
+    /// Handles exceptions by returning appropriate HTTP responses.
+    /// </summary>
+    /// <param name="context">The HTTP context.</param>
+    /// <param name="exception">The exception to handle.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
@@ -45,4 +64,9 @@ public class ExceptionHandlingMiddleware
     }
 }
 
+/// <summary>
+/// Represents a response for an exception.
+/// </summary>
+/// <param name="StatusCode">The HTTP status code.</param>
+/// <param name="Message">The error message.</param>
 public record ExceptionResponse(HttpStatusCode StatusCode, string Message);

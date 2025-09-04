@@ -5,15 +5,26 @@ using Domain.Exceptions;
 
 namespace Application.UseCases;
 
+/// <summary>
+/// Service for managing categories in the application.
+/// </summary>
 public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _categoryRepository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CategoryService"/> class.
+    /// </summary>
+    /// <param name="categoryRepository">The category repository.</param>
     public CategoryService(ICategoryRepository categoryRepository)
     {
         _categoryRepository = categoryRepository;
     }
 
+    /// <summary>
+    /// Gets all categories asynchronously.
+    /// </summary>
+    /// <returns>A collection of category DTOs.</returns>
     public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()
     {
         var categories = await _categoryRepository.GetAllAsync();
@@ -25,6 +36,12 @@ public class CategoryService : ICategoryService
         });
     }
 
+    /// <summary>
+    /// Gets a category by its ID asynchronously.
+    /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>The category DTO if found; otherwise, null.</returns>
+    /// <exception cref="ValidationException">Thrown when the ID is less than or equal to zero.</exception>
     public async Task<CategoryDto?> GetCategoryByIdAsync(int id)
     {
         if (id <= 0)
@@ -34,6 +51,12 @@ public class CategoryService : ICategoryService
         return category; // Will be null if not found, which is handled by the API controller
     }
 
+    /// <summary>
+    /// Creates a new category asynchronously.
+    /// </summary>
+    /// <param name="createCategoryDto">The DTO containing category creation data.</param>
+    /// <returns>The created category DTO.</returns>
+    /// <exception cref="ValidationException">Thrown when the category name is null or empty.</exception>
     public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto createCategoryDto)
     {
         if (string.IsNullOrWhiteSpace(createCategoryDto.Name))
@@ -54,6 +77,14 @@ public class CategoryService : ICategoryService
         };
     }
 
+    /// <summary>
+    /// Updates an existing category asynchronously.
+    /// </summary>
+    /// <param name="id">The ID of the category to update.</param>
+    /// <param name="updateCategoryDto">The DTO containing updated category data.</param>
+    /// <returns>The updated category DTO.</returns>
+    /// <exception cref="ValidationException">Thrown when the ID is less than or equal to zero or the category name is null or empty.</exception>
+    /// <exception cref="EntityNotFoundException">Thrown when no category with the specified ID is found.</exception>
     public async Task<CategoryDto> UpdateCategoryAsync(int id, UpdateCategoryDto updateCategoryDto)
     {
         if (id <= 0)
@@ -81,6 +112,12 @@ public class CategoryService : ICategoryService
         };
     }
 
+    /// <summary>
+    /// Deletes a category by its ID asynchronously.
+    /// </summary>
+    /// <param name="id">The ID of the category to delete.</param>
+    /// <returns>True if the category was deleted; otherwise, false.</returns>
+    /// <exception cref="ValidationException">Thrown when the ID is less than or equal to zero.</exception>
     public async Task<bool> DeleteCategoryAsync(int id)
     {
         if (id <= 0)
