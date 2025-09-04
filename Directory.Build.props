@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>lcov</CoverletOutputFormat>
+    <CoverletOutput>$(MSBuildThisFileDirectory)coverage\lcov.info</CoverletOutput>
+    <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
+    <Exclude>[coverlet.*]*</Exclude>
+  </PropertyGroup>
+</Project>
