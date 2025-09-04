@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ main ]
 
+# Add permissions for the workflow
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  statuses: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -75,6 +82,7 @@ jobs:
       if: always()
       with:
         files: "**/test-results.trx"
+      continue-on-error: true
 
     - name: Install lcov reporter
       run: |
