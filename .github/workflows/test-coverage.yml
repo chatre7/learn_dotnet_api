@@ -44,9 +44,7 @@ jobs:
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
           /p:CoverletOutput=./coverage/lcov.info \
-          /p:Threshold=80 \
-          /p:Include="[Application]*,[Domain]*,[Infrastructure]*" \
-          /p:Exclude="[Application.Tests]*,[Domain.Tests]*,[Infrastructure.Tests]*"
+          /p:Threshold=80
 
     - name: Install lcov reporter
       run: |
