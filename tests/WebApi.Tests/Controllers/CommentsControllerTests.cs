@@ -25,6 +25,7 @@ public class CommentsControllerTests : IntegrationTestBase, IClassFixture<WebApp
     public async Task GetComments_ReturnsOk()
     {
         // Arrange
+        await SeedTestDataAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/comments");
         request.Headers.Add("Authorization", "Bearer token-1-admin@example.com-123456789");
 
@@ -42,11 +43,12 @@ public class CommentsControllerTests : IntegrationTestBase, IClassFixture<WebApp
     public async Task CreateComment_WithValidData_ReturnsCreated()
     {
         // Arrange
+        await SeedTestDataAsync();
         var comment = new CreateCommentDto
         {
             Content = "Test Comment",
-            UserId = 1,
-            PostId = 1
+            UserId = _userId, // Use the correct user ID from seeded data
+            PostId = _postId  // Use the correct post ID from seeded data
         };
         
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/comments")
@@ -69,11 +71,12 @@ public class CommentsControllerTests : IntegrationTestBase, IClassFixture<WebApp
     public async Task CreateComment_WithInvalidData_ReturnsBadRequest()
     {
         // Arrange
+        await SeedTestDataAsync();
         var comment = new CreateCommentDto
         {
             Content = "", // Invalid: empty content
-            UserId = 1,
-            PostId = 1
+            UserId = _userId,   // Use the correct user ID from seeded data
+            PostId = _postId    // Use the correct post ID from seeded data
         };
         
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/comments")

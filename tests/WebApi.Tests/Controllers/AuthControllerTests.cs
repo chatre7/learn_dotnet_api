@@ -24,6 +24,7 @@ public class AuthControllerTests : IntegrationTestBase, IClassFixture<WebApplica
     public async Task Login_WithValidCredentials_ReturnsOk()
     {
         // Arrange
+        await SeedTestDataAsync();
         var loginDto = new
         {
             Email = "admin@example.com",
@@ -44,6 +45,7 @@ public class AuthControllerTests : IntegrationTestBase, IClassFixture<WebApplica
     public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
         // Arrange
+        await SeedTestDataAsync();
         var loginDto = new
         {
             Email = "invalid@example.com",

@@ -25,6 +25,7 @@ public class CategoriesControllerTests : IntegrationTestBase, IClassFixture<WebA
     public async Task GetCategories_ReturnsOk()
     {
         // Arrange
+        await SeedTestDataAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/categories");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "token-1-admin@example.com-123456789");
 
@@ -42,10 +43,11 @@ public class CategoriesControllerTests : IntegrationTestBase, IClassFixture<WebA
     public async Task CreateCategory_WithValidData_ReturnsCreated()
     {
         // Arrange
+        await SeedTestDataAsync();
         var category = new CreateCategoryDto
         {
-            Name = "Test Category",
-            Description = "Test Description"
+            Name = "Test Category 2",
+            Description = "Test Description 2"
         };
         
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/categories")
@@ -68,6 +70,7 @@ public class CategoriesControllerTests : IntegrationTestBase, IClassFixture<WebA
     public async Task CreateCategory_WithInvalidData_ReturnsBadRequest()
     {
         // Arrange
+        await SeedTestDataAsync();
         var category = new CreateCategoryDto
         {
             Name = "", // Invalid: empty name

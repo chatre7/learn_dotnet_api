@@ -25,6 +25,7 @@ public class PostsControllerTests : IntegrationTestBase, IClassFixture<WebApplic
     public async Task GetPosts_ReturnsOk()
     {
         // Arrange
+        await SeedTestDataAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/posts");
         request.Headers.Add("Authorization", "Bearer token-1-admin@example.com-123456789");
 
@@ -42,12 +43,13 @@ public class PostsControllerTests : IntegrationTestBase, IClassFixture<WebApplic
     public async Task CreatePost_WithValidData_ReturnsCreated()
     {
         // Arrange
+        await SeedTestDataAsync();
         var post = new CreatePostDto
         {
-            Title = "Test Post",
-            Content = "Test Content",
-            UserId = 1,
-            CategoryId = 1
+            Title = "Test Post 2",
+            Content = "Test Content 2",
+            UserId = _userId, // Use the correct user ID from seeded data
+            CategoryId = _categoryId // Use the correct category ID from seeded data
         };
         
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/posts")
@@ -70,12 +72,13 @@ public class PostsControllerTests : IntegrationTestBase, IClassFixture<WebApplic
     public async Task CreatePost_WithInvalidData_ReturnsBadRequest()
     {
         // Arrange
+        await SeedTestDataAsync();
         var post = new CreatePostDto
         {
             Title = "", // Invalid: empty title
             Content = "Test Content",
-            UserId = 1,
-            CategoryId = 1
+            UserId = _userId, // Use the correct user ID from seeded data
+            CategoryId = _categoryId // Use the correct category ID from seeded data
         };
         
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/posts")

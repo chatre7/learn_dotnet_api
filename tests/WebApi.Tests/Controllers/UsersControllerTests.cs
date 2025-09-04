@@ -25,6 +25,7 @@ public class UsersControllerTests : IntegrationTestBase, IClassFixture<WebApplic
     public async Task GetUsers_ReturnsOk()
     {
         // Arrange
+        await SeedTestDataAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/users");
         request.Headers.Add("Authorization", "Bearer token-1-admin@example.com-123456789");
 
@@ -42,10 +43,11 @@ public class UsersControllerTests : IntegrationTestBase, IClassFixture<WebApplic
     public async Task CreateUser_WithValidData_ReturnsCreated()
     {
         // Arrange
+        await SeedTestDataAsync();
         var user = new CreateUserDto
         {
-            Name = "Test User",
-            Email = "test@example.com"
+            Name = "Test User 2",
+            Email = "test2@example.com"
         };
         
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/users")
@@ -68,6 +70,7 @@ public class UsersControllerTests : IntegrationTestBase, IClassFixture<WebApplic
     public async Task CreateUser_WithInvalidData_ReturnsBadRequest()
     {
         // Arrange
+        await SeedTestDataAsync();
         var user = new CreateUserDto
         {
             Name = "", // Invalid: empty name

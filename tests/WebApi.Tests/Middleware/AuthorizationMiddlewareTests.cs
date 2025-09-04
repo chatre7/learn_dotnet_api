@@ -24,6 +24,7 @@ public class AuthorizationMiddlewareTests : IntegrationTestBase, IClassFixture<W
     public async Task Request_WithoutAuthorizationHeader_ReturnsUnauthorized()
     {
         // Arrange
+        await SeedTestDataAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/categories");
 
         // Act
@@ -40,6 +41,7 @@ public class AuthorizationMiddlewareTests : IntegrationTestBase, IClassFixture<W
     public async Task Request_WithInvalidAuthorizationHeader_ReturnsUnauthorized()
     {
         // Arrange
+        await SeedTestDataAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/categories");
         request.Headers.Add("Authorization", "InvalidToken");
 
@@ -57,6 +59,7 @@ public class AuthorizationMiddlewareTests : IntegrationTestBase, IClassFixture<W
     public async Task Request_WithValidAuthorizationHeader_ReturnsOk()
     {
         // Arrange
+        await SeedTestDataAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/categories");
         request.Headers.Add("Authorization", "Bearer token-1-admin@example.com-123456789");
 
