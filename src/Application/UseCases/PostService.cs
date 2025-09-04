@@ -1,5 +1,6 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Application.Utilities;
 using Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -82,10 +83,14 @@ public class PostService : IPostService
     {
         _logger.LogInformation("Creating new post with title: {Title}", createPostDto.Title);
         
+        // Sanitize inputs
+        var sanitizedTitle = InputSanitizer.SanitizeString(createPostDto.Title);
+        var sanitizedContent = InputSanitizer.SanitizeString(createPostDto.Content);
+        
         var post = new Domain.Entities.Post
         {
-            Title = createPostDto.Title ?? string.Empty,
-            Content = createPostDto.Content ?? string.Empty,
+            Title = sanitizedTitle ?? string.Empty,
+            Content = sanitizedContent ?? string.Empty,
             UserId = createPostDto.UserId,
             CategoryId = createPostDto.CategoryId
         };
@@ -116,6 +121,10 @@ public class PostService : IPostService
     {
         _logger.LogInformation("Updating post with ID: {Id}", id);
         
+        // Sanitize inputs
+        var sanitizedTitle = InputSanitizer.SanitizeString(updatePostDto.Title);
+        var sanitizedContent = InputSanitizer.SanitizeString(updatePostDto.Content);
+        
         var existingPost = await _postRepository.GetByIdAsync(id);
         if (existingPost == null)
         {
@@ -123,8 +132,8 @@ public class PostService : IPostService
             throw new Exception($"Post with ID {id} not found");
         }
 
-        existingPost.Title = updatePostDto.Title ?? existingPost.Title;
-        existingPost.Content = updatePostDto.Content ?? existingPost.Content;
+        existingPost.Title = sanitizedTitle ?? existingPost.Title;
+        existingPost.Content = sanitizedContent ?? existingPost.Content;
         existingPost.CategoryId = updatePostDto.CategoryId;
 
         var updatedPost = await _postRepository.UpdateAsync(existingPost);

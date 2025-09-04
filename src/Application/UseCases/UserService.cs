@@ -1,5 +1,6 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Application.Utilities;
 using Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -78,10 +79,14 @@ public class UserService : IUserService
     {
         _logger.LogInformation("Creating new user with name: {Name}", createUserDto.Name);
         
+        // Sanitize inputs
+        var sanitizedName = InputSanitizer.SanitizeString(createUserDto.Name);
+        var sanitizedEmail = InputSanitizer.SanitizeEmail(createUserDto.Email);
+        
         var user = new Domain.Entities.User
         {
-            Name = createUserDto.Name ?? string.Empty,
-            Email = createUserDto.Email ?? string.Empty
+            Name = sanitizedName ?? string.Empty,
+            Email = sanitizedEmail ?? string.Empty
         };
 
         var createdUser = await _userRepository.CreateAsync(user);
@@ -108,6 +113,10 @@ public class UserService : IUserService
     {
         _logger.LogInformation("Updating user with ID: {Id}", id);
         
+        // Sanitize inputs
+        var sanitizedName = InputSanitizer.SanitizeString(updateUserDto.Name);
+        var sanitizedEmail = InputSanitizer.SanitizeEmail(updateUserDto.Email);
+        
         var existingUser = await _userRepository.GetByIdAsync(id);
         if (existingUser == null)
         {
@@ -115,8 +124,8 @@ public class UserService : IUserService
             throw new Exception($"User with ID {id} not found");
         }
 
-        existingUser.Name = updateUserDto.Name ?? existingUser.Name;
-        existingUser.Email = updateUserDto.Email ?? existingUser.Email;
+        existingUser.Name = sanitizedName ?? existingUser.Name;
+        existingUser.Email = sanitizedEmail ?? existingUser.Email;
 
         var updatedUser = await _userRepository.UpdateAsync(existingUser);
         _logger.LogInformation("User updated successfully with ID: {Id}", updatedUser.Id);

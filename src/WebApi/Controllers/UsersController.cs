@@ -66,6 +66,12 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto createUserDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for user creation");
+            return BadRequest(ModelState);
+        }
+        
         _logger.LogInformation("Creating new user with name: {Name}", createUserDto.Name);
         var user = await _userService.CreateUserAsync(createUserDto);
         _logger.LogInformation("User created successfully with ID: {Id}", user.Id);
@@ -81,6 +87,12 @@ public class UsersController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateUser(int id, UpdateUserDto updateUserDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for user update with ID: {Id}", id);
+            return BadRequest(ModelState);
+        }
+        
         try
         {
             _logger.LogInformation("Updating user with ID: {Id}", id);

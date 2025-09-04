@@ -1,5 +1,6 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Application.Utilities;
 using Domain.Interfaces;
 using Domain.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -81,16 +82,20 @@ public class CategoryService : ICategoryService
     {
         _logger.LogInformation("Creating new category with name: {Name}", createCategoryDto.Name);
         
-        if (string.IsNullOrWhiteSpace(createCategoryDto.Name))
+        // Sanitize inputs
+        var sanitizedName = InputSanitizer.SanitizeString(createCategoryDto.Name);
+        var sanitizedDescription = InputSanitizer.SanitizeString(createCategoryDto.Description);
+        
+        if (string.IsNullOrWhiteSpace(sanitizedName))
         {
-            _logger.LogWarning("Category name is required but was null or empty");
+            _logger.LogWarning("Category name is required but was null or empty after sanitization");
             throw new ValidationException("Category name is required");
         }
 
         var category = new Domain.Entities.Category
         {
-            Name = createCategoryDto.Name ?? string.Empty,
-            Description = createCategoryDto.Description ?? string.Empty
+            Name = sanitizedName,
+            Description = sanitizedDescription
         };
 
         var createdCategory = await _categoryRepository.CreateAsync(category);
@@ -116,13 +121,17 @@ public class CategoryService : ICategoryService
     {
         _logger.LogInformation("Updating category with ID: {Id}", id);
         
+        // Sanitize inputs
+        var sanitizedName = InputSanitizer.SanitizeString(updateCategoryDto.Name);
+        var sanitizedDescription = InputSanitizer.SanitizeString(updateCategoryDto.Description);
+        
         if (id <= 0)
         {
             _logger.LogWarning("Invalid category ID: {Id}", id);
             throw new ValidationException("Category ID must be greater than zero");
         }
 
-        if (string.IsNullOrWhiteSpace(updateCategoryDto.Name))
+        if (string.IsNullOrWhiteSpace(sanitizedName))
         {
             _logger.LogWarning("Category name is required but was null or empty for ID: {Id}", id);
             throw new ValidationException("Category name is required");
@@ -135,8 +144,8 @@ public class CategoryService : ICategoryService
             throw new EntityNotFoundException($"Category with ID {id} not found");
         }
 
-        existingCategory.Name = updateCategoryDto.Name ?? existingCategory.Name;
-        existingCategory.Description = updateCategoryDto.Description ?? existingCategory.Description;
+        existingCategory.Name = sanitizedName;
+        existingCategory.Description = sanitizedDescription;
 
         var updatedCategory = await _categoryRepository.UpdateAsync(existingCategory);
         _logger.LogInformation("Category updated successfully with ID: {Id}", updatedCategory.Id);

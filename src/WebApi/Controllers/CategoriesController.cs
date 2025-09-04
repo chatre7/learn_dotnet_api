@@ -66,6 +66,12 @@ public class CategoriesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CategoryDto>> CreateCategory(CreateCategoryDto createCategoryDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for category creation");
+            return BadRequest(ModelState);
+        }
+        
         _logger.LogInformation("Creating new category with name: {Name}", createCategoryDto.Name);
         var category = await _categoryService.CreateCategoryAsync(createCategoryDto);
         _logger.LogInformation("Category created successfully with ID: {Id}", category.Id);
@@ -81,6 +87,12 @@ public class CategoriesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCategory(int id, UpdateCategoryDto updateCategoryDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for category update with ID: {Id}", id);
+            return BadRequest(ModelState);
+        }
+        
         try
         {
             _logger.LogInformation("Updating category with ID: {Id}", id);

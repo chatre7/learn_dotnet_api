@@ -66,6 +66,12 @@ public class PostsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PostDto>> CreatePost(CreatePostDto createPostDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for post creation");
+            return BadRequest(ModelState);
+        }
+        
         _logger.LogInformation("Creating new post with title: {Title}", createPostDto.Title);
         var post = await _postService.CreatePostAsync(createPostDto);
         _logger.LogInformation("Post created successfully with ID: {Id}", post.Id);
@@ -81,6 +87,12 @@ public class PostsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdatePost(int id, UpdatePostDto updatePostDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for post update with ID: {Id}", id);
+            return BadRequest(ModelState);
+        }
+        
         try
         {
             _logger.LogInformation("Updating post with ID: {Id}", id);

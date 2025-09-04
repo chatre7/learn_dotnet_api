@@ -1,5 +1,6 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Application.Utilities;
 using Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -78,9 +79,12 @@ public class CommentService : ICommentService
     {
         _logger.LogInformation("Creating new comment for post ID: {PostId}", createCommentDto.PostId);
         
+        // Sanitize inputs
+        var sanitizedContent = InputSanitizer.SanitizeString(createCommentDto.Content);
+        
         var comment = new Domain.Entities.Comment
         {
-            Content = createCommentDto.Content ?? string.Empty,
+            Content = sanitizedContent ?? string.Empty,
             UserId = createCommentDto.UserId,
             PostId = createCommentDto.PostId
         };
@@ -109,6 +113,9 @@ public class CommentService : ICommentService
     {
         _logger.LogInformation("Updating comment with ID: {Id}", id);
         
+        // Sanitize inputs
+        var sanitizedContent = InputSanitizer.SanitizeString(updateCommentDto.Content);
+        
         var existingComment = await _commentRepository.GetByIdAsync(id);
         if (existingComment == null)
         {
@@ -116,7 +123,7 @@ public class CommentService : ICommentService
             throw new Exception($"Comment with ID {id} not found");
         }
 
-        existingComment.Content = updateCommentDto.Content ?? existingComment.Content;
+        existingComment.Content = sanitizedContent ?? existingComment.Content;
 
         var updatedComment = await _commentRepository.UpdateAsync(existingComment);
         _logger.LogInformation("Comment updated successfully with ID: {Id}", updatedComment.Id);

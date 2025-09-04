@@ -66,6 +66,12 @@ public class CommentsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CommentDto>> CreateComment(CreateCommentDto createCommentDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for comment creation");
+            return BadRequest(ModelState);
+        }
+        
         _logger.LogInformation("Creating new comment for post ID: {PostId}", createCommentDto.PostId);
         var comment = await _commentService.CreateCommentAsync(createCommentDto);
         _logger.LogInformation("Comment created successfully with ID: {Id}", comment.Id);
@@ -81,6 +87,12 @@ public class CommentsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateComment(int id, UpdateCommentDto updateCommentDto)
     {
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("Invalid model state for comment update with ID: {Id}", id);
+            return BadRequest(ModelState);
+        }
+        
         try
         {
             _logger.LogInformation("Updating comment with ID: {Id}", id);
