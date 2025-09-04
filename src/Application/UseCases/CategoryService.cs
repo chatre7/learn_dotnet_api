@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Domain.Interfaces;
+using Domain.Exceptions;
 
 namespace Application.UseCases;
 
@@ -26,19 +27,18 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryDto?> GetCategoryByIdAsync(int id)
     {
-        var category = await _categoryRepository.GetByIdAsync(id);
-        if (category == null) return null;
+        if (id <= 0)
+            throw new ValidationException("Category ID must be greater than zero");
 
-        return new CategoryDto
-        {
-            Id = category.Id,
-            Name = category.Name,
-            Description = category.Description
-        };
+        var category = await _categoryRepository.GetByIdAsync(id);
+        return category; // Will be null if not found, which is handled by the API controller
     }
 
     public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto createCategoryDto)
     {
+        if (string.IsNullOrWhiteSpace(createCategoryDto.Name))
+            throw new ValidationException("Category name is required");
+
         var category = new Domain.Entities.Category
         {
             Name = createCategoryDto.Name ?? string.Empty,
@@ -46,7 +46,6 @@ public class CategoryService : ICategoryService
         };
 
         var createdCategory = await _categoryRepository.CreateAsync(category);
-
         return new CategoryDto
         {
             Id = createdCategory.Id,
@@ -57,10 +56,16 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryDto> UpdateCategoryAsync(int id, UpdateCategoryDto updateCategoryDto)
     {
+        if (id <= 0)
+            throw new ValidationException("Category ID must be greater than zero");
+
+        if (string.IsNullOrWhiteSpace(updateCategoryDto.Name))
+            throw new ValidationException("Category name is required");
+
         var existingCategory = await _categoryRepository.GetByIdAsync(id);
         if (existingCategory == null)
         {
-            throw new Exception($"Category with ID {id} not found");
+            throw new EntityNotFoundException($"Category with ID {id} not found");
         }
 
         existingCategory.Name = updateCategoryDto.Name ?? existingCategory.Name;
@@ -78,6 +83,9 @@ public class CategoryService : ICategoryService
 
     public async Task<bool> DeleteCategoryAsync(int id)
     {
+        if (id <= 0)
+            throw new ValidationException("Category ID must be greater than zero");
+
         return await _categoryRepository.DeleteAsync(id);
     }
 }
