@@ -14,6 +14,7 @@ A modern .NET 9 REST API implementing CRUD operations for a blog system with Use
 - [API Endpoints](#api-endpoints)
 - [Testing](#testing)
 - [Database Schema](#database-schema)
+- [Enhancements Implemented](#enhancements-implemented)
 
 ## Features
 
@@ -23,8 +24,14 @@ A modern .NET 9 REST API implementing CRUD operations for a blog system with Use
 - Asynchronous programming throughout
 - Docker containerization support
 - Swagger/OpenAPI documentation
-- Comprehensive unit testing
+- Comprehensive unit and integration testing
 - PostgreSQL database with Dapper micro-ORM
+- Structured logging with different log levels
+- Global exception handling middleware
+- Input validation and sanitization
+- JWT-based authentication and custom authorization
+- In-memory caching for improved performance
+- CI/CD pipeline with automated deployment and security scanning
 
 ## Technology Stack
 
@@ -35,6 +42,10 @@ A modern .NET 9 REST API implementing CRUD operations for a blog system with Use
 - **Containerization**: Docker, Docker Compose
 - **API Documentation**: Swagger/OpenAPI
 - **Testing**: xUnit, Moq
+- **Caching**: MemoryCache
+- **Logging**: Microsoft.Extensions.Logging
+- **Authentication**: JWT Bearer Tokens
+- **CI/CD**: GitHub Actions
 
 ## Architecture
 
@@ -82,6 +93,7 @@ src/
 ├── WebApi/                 # Presentation Layer (ASP.NET Core Web API)
 │   ├── Controllers/        # API Controllers
 │   ├── Extensions/         # Service collection extensions
+│   ├── Middleware/         # Custom middleware (Exception handling, Authorization)
 │   ├── Properties/         # Launch settings
 │   ├── appsettings.json    # Configuration
 │   └── Program.cs          # Application entry point
@@ -89,14 +101,17 @@ src/
 │   ├── DTOs/               # Data Transfer Objects
 │   ├── Extensions/         # Service collection extensions
 │   ├── Interfaces/         # Service interfaces
-│   └── UseCases/           # Service implementations
+│   ├── UseCases/           # Service implementations
+│   └── Utilities/          # Utility classes (Input sanitization)
 ├── Domain/                 # Domain Layer
 │   ├── Entities/           # Business entities
+│   ├── Exceptions/         # Custom exceptions
 │   └── Interfaces/         # Repository interfaces
 ├── Infrastructure/         # Infrastructure Layer
 │   ├── Data/               # Database initialization
 │   ├── Extensions/         # Service collection extensions
-│   └── Repositories/       # Dapper repository implementations
+│   ├── Repositories/       # Dapper repository implementations
+│   └── Services/           # Infrastructure services (Caching)
 tests/
 ├── Application.Tests/      # Application layer tests
 ├── Infrastructure.Tests/   # Infrastructure layer tests
@@ -163,6 +178,11 @@ docker-compose down
 
 ## API Endpoints
 
+### Authentication
+| Method | Endpoint      | Description         |
+|--------|---------------|---------------------|
+| POST   | `/api/auth/login` | User login to get JWT token |
+
 ### Users
 | Method | Endpoint        | Description           |
 |--------|-----------------|-----------------------|
@@ -201,15 +221,16 @@ docker-compose down
 
 ## Testing
 
-Run unit tests for the entire solution:
+The project includes comprehensive unit and integration tests:
 
 ```bash
+# Run all tests
 dotnet test
-```
 
-Run tests for a specific project:
+# Run tests with code coverage
+dotnet test --collect:"XPlat Code Coverage"
 
-```bash
+# Run tests for a specific project
 dotnet test tests/Application.Tests
 dotnet test tests/Infrastructure.Tests
 dotnet test tests/WebApi.Tests
@@ -217,56 +238,49 @@ dotnet test tests/WebApi.Tests
 
 ## Database Schema
 
-The application uses the following entity relationship model:
+The database consists of four main tables:
 
-```mermaid
-erDiagram
-    USERS ||--o{ POSTS : "creates"
-    USERS ||--o{ COMMENTS : "writes"
-    POSTS ||--o{ COMMENTS : "contains"
-    POSTS }|--|| CATEGORIES : "belongs to"
+1. **Users** - Stores user information
+2. **Categories** - Stores post categories
+3. **Posts** - Stores blog posts
+4. **Comments** - Stores comments on posts
 
-    USERS {
-        int Id PK
-        string Name
-        string Email
-        datetime CreatedAt
-        datetime UpdatedAt
-    }
-    
-    POSTS {
-        int Id PK
-        string Title
-        string Content
-        int UserId FK
-        int CategoryId FK
-        datetime CreatedAt
-        datetime UpdatedAt
-    }
-    
-    COMMENTS {
-        int Id PK
-        string Content
-        int UserId FK
-        int PostId FK
-        datetime CreatedAt
-    }
-    
-    CATEGORIES {
-        int Id PK
-        string Name
-        string Description
-    }
-```
+## Enhancements Implemented
 
-## Contributing
+### 1. Enhanced Error Handling
+- Global exception handling middleware
+- Custom exception types for better error management
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a pull request
+### 2. Improved Documentation
+- XML documentation comments for all public methods and classes
+- Enhanced code readability and maintainability
 
-## License
+### 3. Added Logging
+- Structured logging with ILogger throughout the application
+- Configured different log levels for development and production environments
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### 4. Enhanced Security
+- Input validation and sanitization
+- JWT-based authentication
+- Custom authorization middleware
+- Data annotations for validation
+
+### 5. Improved Testing
+- Integration tests for all API endpoints
+- Increased code coverage with comprehensive unit tests
+- Fixed database concurrency issues in tests
+
+### 6. Added Caching
+- In-memory caching implementation using MemoryCache
+- Caching for frequently accessed data (categories, posts)
+- Cache invalidation strategies
+
+### 7. Enhanced CI/CD Pipeline
+- GitHub Actions workflow with multiple jobs:
+  - Build and test with coverage reporting
+  - Security scanning
+  - Performance benchmarking
+  - Staging and production deployment
+  - Failure notifications
+- Health checks in the application
+- Optimized Dockerfile for production deployment
