@@ -40,16 +40,16 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore BlogApi.sln
 
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build BlogApi.sln --no-restore
 
     - name: Run tests with coverage and publish results
       id: test_step
       run: |
         echo "Running tests..."
-        dotnet test --no-build --verbosity normal \
+        dotnet test BlogApi.sln --no-build --verbosity normal \
           --logger "trx;LogFileName=test-results.trx" \
           --logger "console;verbosity=detailed" \
           /p:CollectCoverage=true \

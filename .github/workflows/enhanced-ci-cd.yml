@@ -42,15 +42,15 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore BlogApi.sln
 
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build BlogApi.sln --no-restore
 
     - name: Run tests with coverage
       run: |
         echo "Running tests..."
-        dotnet test --no-build --verbosity normal \
+        dotnet test BlogApi.sln --no-build --verbosity normal \
           --logger "trx;LogFileName=test-results.trx" \
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
@@ -100,7 +100,7 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore BlogApi.sln
 
     - name: Run security audit
       run: |
@@ -110,7 +110,7 @@ jobs:
     - name: Run code analysis
       run: |
         echo "Running code analysis..."
-        dotnet build -p:EnableNETAnalyzers=true -p:AnalysisLevel=latest -p:AnalysisMode=All
+        dotnet build BlogApi.sln -p:EnableNETAnalyzers=true -p:AnalysisLevel=latest -p:AnalysisMode=All
 
   performance-benchmark:
     name: Performance Benchmark
@@ -125,7 +125,7 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore BlogApi.sln
 
     - name: Run benchmark tests
       run: |
@@ -151,7 +151,7 @@ jobs:
     - name: Publish application
       run: |
         echo "Publishing application for staging..."
-        dotnet publish -c Release -o ./publish
+        dotnet publish BlogApi.sln -c Release -o ./publish
 
     - name: Deploy to staging
       run: |
@@ -177,7 +177,7 @@ jobs:
     - name: Publish application
       run: |
         echo "Publishing application for production..."
-        dotnet publish -c Release -o ./publish
+        dotnet publish BlogApi.sln -c Release -o ./publish
 
     - name: Deploy to production
       run: |
