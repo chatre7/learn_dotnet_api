@@ -44,43 +44,50 @@ jobs:
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
           /p:CoverletOutput=./coverage/lcov.info \
-          /p:Threshold=80
+          /p:Threshold=80 \
+          /p:Include="[Application]*,[Domain]*,[Infrastructure]*" \
+          /p:Exclude="[Application.Tests]*,[Domain.Tests]*,[Infrastructure.Tests]*"
 
     - name: Install lcov reporter
       run: |
         sudo apt-get update
         sudo apt-get install -y lcov
 
+    - name: Check if coverage file exists
+      id: check_files
+      run: |
+        if [ -f "./coverage/lcov.info" ]; then
+          echo "coverage_file_exists=true" >> $GITHUB_OUTPUT
+          echo "Coverage file found"
+        else
+          echo "coverage_file_exists=false" >> $GITHUB_OUTPUT
+          echo "Coverage file not found"
+        fi
+
     - name: Generate coverage report
+      if: steps.check_files.outputs.coverage_file_exists == 'true'
       run: |
         # Generate HTML report
         genhtml ./coverage/lcov.info --output-directory ./coverage/report
         
         # Get coverage percentage
-        if [ -f "./coverage/lcov.info" ]; then
-          COVERAGE_PERCENT=$(lcov --summary ./coverage/lcov.info | grep -E "lines.*:" | awk '{print $2}')
-          echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
-        else
-          echo "COVERAGE_PERCENT=0%" >> $GITHUB_ENV
-        fi
+        COVERAGE_PERCENT=$(lcov --summary ./coverage/lcov.info | grep -E "lines.*:" | awk '{print $2}')
+        echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
 
     - name: Check coverage threshold
+      if: steps.check_files.outputs.coverage_file_exists == 'true'
       run: |
         # Extract the numeric part of the coverage percentage
-        if [ -f "./coverage/lcov.info" ]; then
-          COVERAGE_VALUE=$(echo "${{ env.COVERAGE_PERCENT }}" | sed 's/%//')
-          if (( $(echo "$COVERAGE_VALUE < 80" | bc -l) )); then
-            echo "Coverage is below the required threshold of 80%"
-            exit 1
-          else
-            echo "Coverage meets the required threshold"
-          fi
-        else
-          echo "No coverage report found"
+        COVERAGE_VALUE=$(echo "${{ env.COVERAGE_PERCENT }}" | sed 's/%//')
+        if (( $(echo "$COVERAGE_VALUE < 80" | bc -l) )); then
+          echo "Coverage is below the required threshold of 80%"
           exit 1
+        else
+          echo "Coverage meets the required threshold"
         fi
 
     - name: Publish coverage report as artifact
+      if: steps.check_files.outputs.coverage_file_exists == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
@@ -90,11 +97,17 @@ jobs:
     - name: Display coverage summary
       run: |
         echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
-        echo "Coverage report has been generated and uploaded as an artifact." >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Metric | Coverage | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|--------|----------|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Lines | ${{ env.COVERAGE_PERCENT }} | ✅ Meets threshold (80%) |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "You can download the full HTML report from the Artifacts section of this workflow run." >> $GITHUB_STEP_SUMMARY
-        echo "To view the HTML report, download the artifact and open index.html in your browser." >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.check_files.outputs.coverage_file_exists }}" == "true" ]; then
+          echo "Coverage report has been generated and uploaded as an artifact." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lines | ${{ env.COVERAGE_PERCENT }} | ✅ Meets threshold (80%) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "You can download the full HTML report from the Artifacts section of this workflow run." >> $GITHUB_STEP_SUMMARY
+          echo "To view the HTML report, download the artifact and open index.html in your browser." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ No coverage report was generated. This may be due to tests failing or coverage not being collected properly." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the test execution logs for more details." >> $GITHUB_STEP_SUMMARY
+        fi

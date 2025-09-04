@@ -19,5 +19,11 @@
     
     <!-- Include test assembly names for better reporting -->
     <IncludeTestAssembly>false</IncludeTestAssembly>
+    
+    <!-- Include specific assemblies for coverage -->
+    <Include>[Application]*,[Domain]*,[Infrastructure]*</Include>
+    
+    <!-- Exclude test assemblies from coverage -->
+    <Exclude>[Application.Tests]*,[Domain.Tests]*,[Infrastructure.Tests]*</Exclude>
   </PropertyGroup>
 </Project>
