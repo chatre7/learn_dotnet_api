@@ -59,7 +59,9 @@ jobs:
           --logger "trx;LogFileName=../../test-results-application.trx" \
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
-          /p:CoverletOutput=../../coverage/application-lcov.info
+          /p:CoverletOutput=../../coverage/application-lcov.info \
+          /p:Include="[Application]*" \
+          /p:Exclude="[Application.Tests]*"
 
     - name: Run tests with coverage for Infrastructure layer
       working-directory: ./tests/Infrastructure.Tests
@@ -69,7 +71,9 @@ jobs:
           --logger "trx;LogFileName=../../test-results-infrastructure.trx" \
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
-          /p:CoverletOutput=../../coverage/infrastructure-lcov.info
+          /p:CoverletOutput=../../coverage/infrastructure-lcov.info \
+          /p:Include="[Infrastructure]*" \
+          /p:Exclude="[Infrastructure.Tests]*"
 
     - name: Run tests with coverage for WebApi layer
       working-directory: ./tests/WebApi.Tests
@@ -79,7 +83,9 @@ jobs:
           --logger "trx;LogFileName=../../test-results-webapi.trx" \
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
-          /p:CoverletOutput=../../coverage/webapi-lcov.info
+          /p:CoverletOutput=../../coverage/webapi-lcov.info \
+          /p:Include="[WebApi]*" \
+          /p:Exclude="[WebApi.Tests]*"
 
     - name: Check test results
       run: |
@@ -100,18 +106,28 @@ jobs:
         # Create combined coverage file
         echo "TN:" > ./coverage/lcov.info
         for file in ./coverage/*-lcov.info; do
-          if [ -f "$file" ] && [[ "$file" != *"merged-lcov.info"* ]]; then
-            echo "Merging $file"
-            cat "$file" >> ./coverage/lcov.info
+          if [ -f "$file" ] && [ -s "$file" ]; then
+            echo "Merging $file (size: $(wc -c < "$file") bytes)"
+            # Skip the first line (TN:) to avoid duplicates
+            tail -n +2 "$file" >> ./coverage/lcov.info
+          else
+            echo "Skipping $file (empty or missing)"
           fi
         done
 
-    - name: Check if coverage file exists
+    - name: Check if coverage file exists and is valid
       id: check_files
       run: |
         if [ -f "./coverage/lcov.info" ] && [ -s "./coverage/lcov.info" ]; then
-          echo "coverage_file_exists=true" >> $GITHUB_OUTPUT
-          echo "Coverage file found"
+          # Check if the file contains valid coverage data (not just TN:)
+          LINE_COUNT=$(wc -l < ./coverage/lcov.info)
+          if [ "$LINE_COUNT" -gt 1 ]; then
+            echo "coverage_file_exists=true" >> $GITHUB_OUTPUT
+            echo "Coverage file found with valid data"
+          else
+            echo "coverage_file_exists=false" >> $GITHUB_OUTPUT
+            echo "Coverage file exists but is empty or contains no valid data"
+          fi
         else
           echo "coverage_file_exists=false" >> $GITHUB_OUTPUT
           echo "Coverage file not found or empty"
@@ -122,7 +138,7 @@ jobs:
       run: |
         # Generate HTML report
         mkdir -p ./coverage/report
-        genhtml ./coverage/lcov.info --output-directory ./coverage/report
+        genhtml --ignore-errors empty ./coverage/lcov.info --output-directory ./coverage/report
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
