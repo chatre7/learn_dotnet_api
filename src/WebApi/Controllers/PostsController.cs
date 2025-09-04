@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace WebApi.Controllers;
 
@@ -12,14 +13,17 @@ namespace WebApi.Controllers;
 public class PostsController : ControllerBase
 {
     private readonly IPostService _postService;
+    private readonly ILogger<PostsController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PostsController"/> class.
     /// </summary>
     /// <param name="postService">The post service.</param>
-    public PostsController(IPostService postService)
+    /// <param name="logger">The logger instance.</param>
+    public PostsController(IPostService postService, ILogger<PostsController> logger)
     {
         _postService = postService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -29,7 +33,9 @@ public class PostsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PostDto>>> GetPosts()
     {
+        _logger.LogInformation("Getting all posts");
         var posts = await _postService.GetAllPostsAsync();
+        _logger.LogInformation("Retrieved {Count} posts", posts.Count());
         return Ok(posts);
     }
 
@@ -41,11 +47,14 @@ public class PostsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<PostDto>> GetPost(int id)
     {
+        _logger.LogInformation("Getting post by ID: {Id}", id);
         var post = await _postService.GetPostByIdAsync(id);
         if (post == null)
         {
+            _logger.LogWarning("Post not found with ID: {Id}", id);
             return NotFound();
         }
+        _logger.LogInformation("Post found with ID: {Id}", id);
         return Ok(post);
     }
 
@@ -57,7 +66,9 @@ public class PostsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PostDto>> CreatePost(CreatePostDto createPostDto)
     {
+        _logger.LogInformation("Creating new post with title: {Title}", createPostDto.Title);
         var post = await _postService.CreatePostAsync(createPostDto);
+        _logger.LogInformation("Post created successfully with ID: {Id}", post.Id);
         return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
     }
 
@@ -72,11 +83,14 @@ public class PostsController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Updating post with ID: {Id}", id);
             var post = await _postService.UpdatePostAsync(id, updatePostDto);
+            _logger.LogInformation("Post updated successfully with ID: {Id}", post.Id);
             return Ok(post);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error updating post with ID: {Id}", id);
             return NotFound(ex.Message);
         }
     }
@@ -89,11 +103,14 @@ public class PostsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePost(int id)
     {
+        _logger.LogInformation("Deleting post with ID: {Id}", id);
         var result = await _postService.DeletePostAsync(id);
         if (!result)
         {
+            _logger.LogWarning("Post not found for deletion with ID: {Id}", id);
             return NotFound();
         }
+        _logger.LogInformation("Post deleted successfully with ID: {Id}", id);
         return NoContent();
     }
 }

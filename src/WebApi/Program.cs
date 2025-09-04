@@ -5,6 +5,11 @@ using WebApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -32,7 +37,11 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
+// Log application startup
+app.Logger.LogInformation("Application starting up");
+
 // Initialize database
 await DatabaseInitializer.InitializeDatabaseAsync(connectionString);
+app.Logger.LogInformation("Database initialized successfully");
 
 app.Run();

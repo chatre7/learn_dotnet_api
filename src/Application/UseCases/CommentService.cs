@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Application.UseCases;
 
@@ -10,14 +11,17 @@ namespace Application.UseCases;
 public class CommentService : ICommentService
 {
     private readonly ICommentRepository _commentRepository;
+    private readonly ILogger<CommentService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CommentService"/> class.
     /// </summary>
     /// <param name="commentRepository">The comment repository.</param>
-    public CommentService(ICommentRepository commentRepository)
+    /// <param name="logger">The logger instance.</param>
+    public CommentService(ICommentRepository commentRepository, ILogger<CommentService> logger)
     {
         _commentRepository = commentRepository;
+        _logger = logger;
     }
 
     /// <summary>
@@ -26,7 +30,9 @@ public class CommentService : ICommentService
     /// <returns>A collection of comment DTOs.</returns>
     public async Task<IEnumerable<CommentDto>> GetAllCommentsAsync()
     {
+        _logger.LogInformation("Getting all comments");
         var comments = await _commentRepository.GetAllAsync();
+        _logger.LogInformation("Retrieved {Count} comments", comments.Count());
         return comments.Select(c => new CommentDto
         {
             Id = c.Id,
@@ -44,9 +50,15 @@ public class CommentService : ICommentService
     /// <returns>The comment DTO if found; otherwise, null.</returns>
     public async Task<CommentDto?> GetCommentByIdAsync(int id)
     {
+        _logger.LogInformation("Getting comment by ID: {Id}", id);
         var comment = await _commentRepository.GetByIdAsync(id);
-        if (comment == null) return null;
-
+        if (comment == null)
+        {
+            _logger.LogWarning("Comment not found with ID: {Id}", id);
+            return null;
+        }
+        
+        _logger.LogInformation("Comment found with ID: {Id}", id);
         return new CommentDto
         {
             Id = comment.Id,
@@ -64,6 +76,8 @@ public class CommentService : ICommentService
     /// <returns>The created comment DTO.</returns>
     public async Task<CommentDto> CreateCommentAsync(CreateCommentDto createCommentDto)
     {
+        _logger.LogInformation("Creating new comment for post ID: {PostId}", createCommentDto.PostId);
+        
         var comment = new Domain.Entities.Comment
         {
             Content = createCommentDto.Content ?? string.Empty,
@@ -72,6 +86,7 @@ public class CommentService : ICommentService
         };
 
         var createdComment = await _commentRepository.CreateAsync(comment);
+        _logger.LogInformation("Comment created successfully with ID: {Id}", createdComment.Id);
 
         return new CommentDto
         {
@@ -92,15 +107,19 @@ public class CommentService : ICommentService
     /// <exception cref="Exception">Thrown when no comment with the specified ID is found.</exception>
     public async Task<CommentDto> UpdateCommentAsync(int id, UpdateCommentDto updateCommentDto)
     {
+        _logger.LogInformation("Updating comment with ID: {Id}", id);
+        
         var existingComment = await _commentRepository.GetByIdAsync(id);
         if (existingComment == null)
         {
+            _logger.LogWarning("Comment not found with ID: {Id}", id);
             throw new Exception($"Comment with ID {id} not found");
         }
 
         existingComment.Content = updateCommentDto.Content ?? existingComment.Content;
 
         var updatedComment = await _commentRepository.UpdateAsync(existingComment);
+        _logger.LogInformation("Comment updated successfully with ID: {Id}", updatedComment.Id);
 
         return new CommentDto
         {
@@ -119,6 +138,16 @@ public class CommentService : ICommentService
     /// <returns>True if the comment was deleted; otherwise, false.</returns>
     public async Task<bool> DeleteCommentAsync(int id)
     {
-        return await _commentRepository.DeleteAsync(id);
+        _logger.LogInformation("Deleting comment with ID: {Id}", id);
+        var result = await _commentRepository.DeleteAsync(id);
+        if (result)
+        {
+            _logger.LogInformation("Comment deleted successfully with ID: {Id}", id);
+        }
+        else
+        {
+            _logger.LogWarning("Comment not found for deletion with ID: {Id}", id);
+        }
+        return result;
     }
 }

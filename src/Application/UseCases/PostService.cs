@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Application.UseCases;
 
@@ -10,14 +11,17 @@ namespace Application.UseCases;
 public class PostService : IPostService
 {
     private readonly IPostRepository _postRepository;
+    private readonly ILogger<PostService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PostService"/> class.
     /// </summary>
     /// <param name="postRepository">The post repository.</param>
-    public PostService(IPostRepository postRepository)
+    /// <param name="logger">The logger instance.</param>
+    public PostService(IPostRepository postRepository, ILogger<PostService> logger)
     {
         _postRepository = postRepository;
+        _logger = logger;
     }
 
     /// <summary>
@@ -26,7 +30,9 @@ public class PostService : IPostService
     /// <returns>A collection of post DTOs.</returns>
     public async Task<IEnumerable<PostDto>> GetAllPostsAsync()
     {
+        _logger.LogInformation("Getting all posts");
         var posts = await _postRepository.GetAllAsync();
+        _logger.LogInformation("Retrieved {Count} posts", posts.Count());
         return posts.Select(p => new PostDto
         {
             Id = p.Id,
@@ -46,9 +52,15 @@ public class PostService : IPostService
     /// <returns>The post DTO if found; otherwise, null.</returns>
     public async Task<PostDto?> GetPostByIdAsync(int id)
     {
+        _logger.LogInformation("Getting post by ID: {Id}", id);
         var post = await _postRepository.GetByIdAsync(id);
-        if (post == null) return null;
-
+        if (post == null)
+        {
+            _logger.LogWarning("Post not found with ID: {Id}", id);
+            return null;
+        }
+        
+        _logger.LogInformation("Post found with ID: {Id}", id);
         return new PostDto
         {
             Id = post.Id,
@@ -68,6 +80,8 @@ public class PostService : IPostService
     /// <returns>The created post DTO.</returns>
     public async Task<PostDto> CreatePostAsync(CreatePostDto createPostDto)
     {
+        _logger.LogInformation("Creating new post with title: {Title}", createPostDto.Title);
+        
         var post = new Domain.Entities.Post
         {
             Title = createPostDto.Title ?? string.Empty,
@@ -77,6 +91,7 @@ public class PostService : IPostService
         };
 
         var createdPost = await _postRepository.CreateAsync(post);
+        _logger.LogInformation("Post created successfully with ID: {Id}", createdPost.Id);
 
         return new PostDto
         {
@@ -99,9 +114,12 @@ public class PostService : IPostService
     /// <exception cref="Exception">Thrown when no post with the specified ID is found.</exception>
     public async Task<PostDto> UpdatePostAsync(int id, UpdatePostDto updatePostDto)
     {
+        _logger.LogInformation("Updating post with ID: {Id}", id);
+        
         var existingPost = await _postRepository.GetByIdAsync(id);
         if (existingPost == null)
         {
+            _logger.LogWarning("Post not found with ID: {Id}", id);
             throw new Exception($"Post with ID {id} not found");
         }
 
@@ -110,6 +128,7 @@ public class PostService : IPostService
         existingPost.CategoryId = updatePostDto.CategoryId;
 
         var updatedPost = await _postRepository.UpdateAsync(existingPost);
+        _logger.LogInformation("Post updated successfully with ID: {Id}", updatedPost.Id);
 
         return new PostDto
         {
@@ -130,6 +149,16 @@ public class PostService : IPostService
     /// <returns>True if the post was deleted; otherwise, false.</returns>
     public async Task<bool> DeletePostAsync(int id)
     {
-        return await _postRepository.DeleteAsync(id);
+        _logger.LogInformation("Deleting post with ID: {Id}", id);
+        var result = await _postRepository.DeleteAsync(id);
+        if (result)
+        {
+            _logger.LogInformation("Post deleted successfully with ID: {Id}", id);
+        }
+        else
+        {
+            _logger.LogWarning("Post not found for deletion with ID: {Id}", id);
+        }
+        return result;
     }
 }

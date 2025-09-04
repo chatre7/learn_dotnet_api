@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.Interfaces;
 using Domain.Interfaces;
 using Domain.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace Application.UseCases;
 
@@ -11,14 +12,17 @@ namespace Application.UseCases;
 public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ILogger<CategoryService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CategoryService"/> class.
     /// </summary>
     /// <param name="categoryRepository">The category repository.</param>
-    public CategoryService(ICategoryRepository categoryRepository)
+    /// <param name="logger">The logger instance.</param>
+    public CategoryService(ICategoryRepository categoryRepository, ILogger<CategoryService> logger)
     {
         _categoryRepository = categoryRepository;
+        _logger = logger;
     }
 
     /// <summary>
@@ -27,7 +31,9 @@ public class CategoryService : ICategoryService
     /// <returns>A collection of category DTOs.</returns>
     public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()
     {
+        _logger.LogInformation("Getting all categories");
         var categories = await _categoryRepository.GetAllAsync();
+        _logger.LogInformation("Retrieved {Count} categories", categories.Count());
         return categories.Select(c => new CategoryDto
         {
             Id = c.Id,
@@ -44,10 +50,24 @@ public class CategoryService : ICategoryService
     /// <exception cref="ValidationException">Thrown when the ID is less than or equal to zero.</exception>
     public async Task<CategoryDto?> GetCategoryByIdAsync(int id)
     {
+        _logger.LogInformation("Getting category by ID: {Id}", id);
+        
         if (id <= 0)
+        {
+            _logger.LogWarning("Invalid category ID: {Id}", id);
             throw new ValidationException("Category ID must be greater than zero");
+        }
 
         var category = await _categoryRepository.GetByIdAsync(id);
+        if (category == null)
+        {
+            _logger.LogWarning("Category not found with ID: {Id}", id);
+        }
+        else
+        {
+            _logger.LogInformation("Category found with ID: {Id}", id);
+        }
+        
         return category; // Will be null if not found, which is handled by the API controller
     }
 
@@ -59,8 +79,13 @@ public class CategoryService : ICategoryService
     /// <exception cref="ValidationException">Thrown when the category name is null or empty.</exception>
     public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto createCategoryDto)
     {
+        _logger.LogInformation("Creating new category with name: {Name}", createCategoryDto.Name);
+        
         if (string.IsNullOrWhiteSpace(createCategoryDto.Name))
+        {
+            _logger.LogWarning("Category name is required but was null or empty");
             throw new ValidationException("Category name is required");
+        }
 
         var category = new Domain.Entities.Category
         {
@@ -69,6 +94,8 @@ public class CategoryService : ICategoryService
         };
 
         var createdCategory = await _categoryRepository.CreateAsync(category);
+        _logger.LogInformation("Category created successfully with ID: {Id}", createdCategory.Id);
+        
         return new CategoryDto
         {
             Id = createdCategory.Id,
@@ -87,15 +114,24 @@ public class CategoryService : ICategoryService
     /// <exception cref="EntityNotFoundException">Thrown when no category with the specified ID is found.</exception>
     public async Task<CategoryDto> UpdateCategoryAsync(int id, UpdateCategoryDto updateCategoryDto)
     {
+        _logger.LogInformation("Updating category with ID: {Id}", id);
+        
         if (id <= 0)
+        {
+            _logger.LogWarning("Invalid category ID: {Id}", id);
             throw new ValidationException("Category ID must be greater than zero");
+        }
 
         if (string.IsNullOrWhiteSpace(updateCategoryDto.Name))
+        {
+            _logger.LogWarning("Category name is required but was null or empty for ID: {Id}", id);
             throw new ValidationException("Category name is required");
+        }
 
         var existingCategory = await _categoryRepository.GetByIdAsync(id);
         if (existingCategory == null)
         {
+            _logger.LogWarning("Category not found with ID: {Id}", id);
             throw new EntityNotFoundException($"Category with ID {id} not found");
         }
 
@@ -103,6 +139,7 @@ public class CategoryService : ICategoryService
         existingCategory.Description = updateCategoryDto.Description ?? existingCategory.Description;
 
         var updatedCategory = await _categoryRepository.UpdateAsync(existingCategory);
+        _logger.LogInformation("Category updated successfully with ID: {Id}", updatedCategory.Id);
 
         return new CategoryDto
         {
@@ -120,9 +157,24 @@ public class CategoryService : ICategoryService
     /// <exception cref="ValidationException">Thrown when the ID is less than or equal to zero.</exception>
     public async Task<bool> DeleteCategoryAsync(int id)
     {
+        _logger.LogInformation("Deleting category with ID: {Id}", id);
+        
         if (id <= 0)
+        {
+            _logger.LogWarning("Invalid category ID: {Id}", id);
             throw new ValidationException("Category ID must be greater than zero");
+        }
 
-        return await _categoryRepository.DeleteAsync(id);
+        var result = await _categoryRepository.DeleteAsync(id);
+        if (result)
+        {
+            _logger.LogInformation("Category deleted successfully with ID: {Id}", id);
+        }
+        else
+        {
+            _logger.LogWarning("Category not found for deletion with ID: {Id}", id);
+        }
+        
+        return result;
     }
 }

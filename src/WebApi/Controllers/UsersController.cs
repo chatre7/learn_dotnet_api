@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace WebApi.Controllers;
 
@@ -12,14 +13,17 @@ namespace WebApi.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly ILogger<UsersController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UsersController"/> class.
     /// </summary>
     /// <param name="userService">The user service.</param>
-    public UsersController(IUserService userService)
+    /// <param name="logger">The logger instance.</param>
+    public UsersController(IUserService userService, ILogger<UsersController> logger)
     {
         _userService = userService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -29,7 +33,9 @@ public class UsersController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
     {
+        _logger.LogInformation("Getting all users");
         var users = await _userService.GetAllUsersAsync();
+        _logger.LogInformation("Retrieved {Count} users", users.Count());
         return Ok(users);
     }
 
@@ -41,11 +47,14 @@ public class UsersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<UserDto>> GetUser(int id)
     {
+        _logger.LogInformation("Getting user by ID: {Id}", id);
         var user = await _userService.GetUserByIdAsync(id);
         if (user == null)
         {
+            _logger.LogWarning("User not found with ID: {Id}", id);
             return NotFound();
         }
+        _logger.LogInformation("User found with ID: {Id}", id);
         return Ok(user);
     }
 
@@ -57,7 +66,9 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto createUserDto)
     {
+        _logger.LogInformation("Creating new user with name: {Name}", createUserDto.Name);
         var user = await _userService.CreateUserAsync(createUserDto);
+        _logger.LogInformation("User created successfully with ID: {Id}", user.Id);
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
     }
 
@@ -72,11 +83,14 @@ public class UsersController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Updating user with ID: {Id}", id);
             var user = await _userService.UpdateUserAsync(id, updateUserDto);
+            _logger.LogInformation("User updated successfully with ID: {Id}", user.Id);
             return Ok(user);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error updating user with ID: {Id}", id);
             return NotFound(ex.Message);
         }
     }
@@ -89,11 +103,14 @@ public class UsersController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
+        _logger.LogInformation("Deleting user with ID: {Id}", id);
         var result = await _userService.DeleteUserAsync(id);
         if (!result)
         {
+            _logger.LogWarning("User not found for deletion with ID: {Id}", id);
             return NotFound();
         }
+        _logger.LogInformation("User deleted successfully with ID: {Id}", id);
         return NoContent();
     }
 }

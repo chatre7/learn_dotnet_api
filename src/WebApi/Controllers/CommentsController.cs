@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace WebApi.Controllers;
 
@@ -12,14 +13,17 @@ namespace WebApi.Controllers;
 public class CommentsController : ControllerBase
 {
     private readonly ICommentService _commentService;
+    private readonly ILogger<CommentsController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CommentsController"/> class.
     /// </summary>
     /// <param name="commentService">The comment service.</param>
-    public CommentsController(ICommentService commentService)
+    /// <param name="logger">The logger instance.</param>
+    public CommentsController(ICommentService commentService, ILogger<CommentsController> logger)
     {
         _commentService = commentService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -29,7 +33,9 @@ public class CommentsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CommentDto>>> GetComments()
     {
+        _logger.LogInformation("Getting all comments");
         var comments = await _commentService.GetAllCommentsAsync();
+        _logger.LogInformation("Retrieved {Count} comments", comments.Count());
         return Ok(comments);
     }
 
@@ -41,11 +47,14 @@ public class CommentsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<CommentDto>> GetComment(int id)
     {
+        _logger.LogInformation("Getting comment by ID: {Id}", id);
         var comment = await _commentService.GetCommentByIdAsync(id);
         if (comment == null)
         {
+            _logger.LogWarning("Comment not found with ID: {Id}", id);
             return NotFound();
         }
+        _logger.LogInformation("Comment found with ID: {Id}", id);
         return Ok(comment);
     }
 
@@ -57,7 +66,9 @@ public class CommentsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CommentDto>> CreateComment(CreateCommentDto createCommentDto)
     {
+        _logger.LogInformation("Creating new comment for post ID: {PostId}", createCommentDto.PostId);
         var comment = await _commentService.CreateCommentAsync(createCommentDto);
+        _logger.LogInformation("Comment created successfully with ID: {Id}", comment.Id);
         return CreatedAtAction(nameof(GetComment), new { id = comment.Id }, comment);
     }
 
@@ -72,11 +83,14 @@ public class CommentsController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Updating comment with ID: {Id}", id);
             var comment = await _commentService.UpdateCommentAsync(id, updateCommentDto);
+            _logger.LogInformation("Comment updated successfully with ID: {Id}", comment.Id);
             return Ok(comment);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error updating comment with ID: {Id}", id);
             return NotFound(ex.Message);
         }
     }
@@ -89,11 +103,14 @@ public class CommentsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteComment(int id)
     {
+        _logger.LogInformation("Deleting comment with ID: {Id}", id);
         var result = await _commentService.DeleteCommentAsync(id);
         if (!result)
         {
+            _logger.LogWarning("Comment not found for deletion with ID: {Id}", id);
             return NotFound();
         }
+        _logger.LogInformation("Comment deleted successfully with ID: {Id}", id);
         return NoContent();
     }
 }
