@@ -40,12 +40,20 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        dotnet test --no-build --verbosity normal
+        dotnet test --no-build --verbosity normal \
+          /p:CollectCoverage=true \
+          /p:CoverletOutputFormat=lcov \
+          /p:CoverletOutput=./coverage/lcov.info
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+    - name: Publish coverage report as artifact
+      uses: actions/upload-artifact@v3
       with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        name: coverage-report
+        path: ./coverage/
+        retention-days: 30
+
+    - name: Generate coverage summary
+      run: |
+        echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "Coverage report has been generated and uploaded as an artifact." >> $GITHUB_STEP_SUMMARY
+        echo "You can download it from the Artifacts section of this workflow run." >> $GITHUB_STEP_SUMMARY
