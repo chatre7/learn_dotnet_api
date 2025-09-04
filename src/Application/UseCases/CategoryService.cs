@@ -41,8 +41,8 @@ public class CategoryService : ICategoryService
     {
         var category = new Domain.Entities.Category
         {
-            Name = createCategoryDto.Name,
-            Description = createCategoryDto.Description
+            Name = createCategoryDto.Name ?? string.Empty,
+            Description = createCategoryDto.Description ?? string.Empty
         };
 
         var createdCategory = await _categoryRepository.CreateAsync(category);
@@ -63,8 +63,8 @@ public class CategoryService : ICategoryService
             throw new Exception($"Category with ID {id} not found");
         }
 
-        existingCategory.Name = updateCategoryDto.Name;
-        existingCategory.Description = updateCategoryDto.Description;
+        existingCategory.Name = updateCategoryDto.Name ?? existingCategory.Name;
+        existingCategory.Description = updateCategoryDto.Description ?? existingCategory.Description;
 
         var updatedCategory = await _categoryRepository.UpdateAsync(existingCategory);
 

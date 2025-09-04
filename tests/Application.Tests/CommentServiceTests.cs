@@ -58,7 +58,7 @@ public class CommentServiceTests
     public async Task GetCommentByIdAsync_NonExistingComment_ReturnsNull()
     {
         // Arrange
-        _mockCommentRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((Comment)null);
+        _mockCommentRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((Comment?)null);
 
         // Act
         var result = await _commentService.GetCommentByIdAsync(1);

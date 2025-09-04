@@ -58,7 +58,7 @@ public class UserServiceTests
     public async Task GetUserByIdAsync_NonExistingUser_ReturnsNull()
     {
         // Arrange
-        _mockUserRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((User)null);
+        _mockUserRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((User?)null);
 
         // Act
         var result = await _userService.GetUserByIdAsync(1);

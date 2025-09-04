@@ -49,8 +49,8 @@ public class PostService : IPostService
     {
         var post = new Domain.Entities.Post
         {
-            Title = createPostDto.Title,
-            Content = createPostDto.Content,
+            Title = createPostDto.Title ?? string.Empty,
+            Content = createPostDto.Content ?? string.Empty,
             UserId = createPostDto.UserId,
             CategoryId = createPostDto.CategoryId
         };
@@ -77,8 +77,8 @@ public class PostService : IPostService
             throw new Exception($"Post with ID {id} not found");
         }
 
-        existingPost.Title = updatePostDto.Title;
-        existingPost.Content = updatePostDto.Content;
+        existingPost.Title = updatePostDto.Title ?? existingPost.Title;
+        existingPost.Content = updatePostDto.Content ?? existingPost.Content;
         existingPost.CategoryId = updatePostDto.CategoryId;
 
         var updatedPost = await _postRepository.UpdateAsync(existingPost);

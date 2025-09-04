@@ -58,7 +58,7 @@ public class CategoryServiceTests
     public async Task GetCategoryByIdAsync_NonExistingCategory_ReturnsNull()
     {
         // Arrange
-        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((Category)null);
+        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((Category?)null);
 
         // Act
         var result = await _categoryService.GetCategoryByIdAsync(1);

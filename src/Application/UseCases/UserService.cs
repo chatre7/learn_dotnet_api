@@ -45,8 +45,8 @@ public class UserService : IUserService
     {
         var user = new Domain.Entities.User
         {
-            Name = createUserDto.Name,
-            Email = createUserDto.Email
+            Name = createUserDto.Name ?? string.Empty,
+            Email = createUserDto.Email ?? string.Empty
         };
 
         var createdUser = await _userRepository.CreateAsync(user);
@@ -69,8 +69,8 @@ public class UserService : IUserService
             throw new Exception($"User with ID {id} not found");
         }
 
-        existingUser.Name = updateUserDto.Name;
-        existingUser.Email = updateUserDto.Email;
+        existingUser.Name = updateUserDto.Name ?? existingUser.Name;
+        existingUser.Email = updateUserDto.Email ?? existingUser.Email;
 
         var updatedUser = await _userRepository.UpdateAsync(existingUser);
 

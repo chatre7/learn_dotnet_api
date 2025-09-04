@@ -45,7 +45,7 @@ public class CommentService : ICommentService
     {
         var comment = new Domain.Entities.Comment
         {
-            Content = createCommentDto.Content,
+            Content = createCommentDto.Content ?? string.Empty,
             UserId = createCommentDto.UserId,
             PostId = createCommentDto.PostId
         };
@@ -70,7 +70,7 @@ public class CommentService : ICommentService
             throw new Exception($"Comment with ID {id} not found");
         }
 
-        existingComment.Content = updateCommentDto.Content;
+        existingComment.Content = updateCommentDto.Content ?? existingComment.Content;
 
         var updatedComment = await _commentRepository.UpdateAsync(existingComment);
 
