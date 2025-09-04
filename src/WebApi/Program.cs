@@ -46,3 +46,8 @@ await DatabaseInitializer.InitializeDatabaseAsync(connectionString);
 app.Logger.LogInformation("Database initialized successfully");
 
 app.Run();
+
+/// <summary>
+/// Program class for the WebApi application.
+/// </summary>
+public partial class Program { }

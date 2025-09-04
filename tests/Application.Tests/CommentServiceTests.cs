@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.UseCases;
 using Domain.Entities;
 using Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Application.Tests;
@@ -9,12 +10,14 @@ namespace Application.Tests;
 public class CommentServiceTests
 {
     private readonly Mock<ICommentRepository> _mockCommentRepository;
+    private readonly Mock<ILogger<CommentService>> _mockLogger;
     private readonly CommentService _commentService;
 
     public CommentServiceTests()
     {
         _mockCommentRepository = new Mock<ICommentRepository>();
-        _commentService = new CommentService(_mockCommentRepository.Object);
+        _mockLogger = new Mock<ILogger<CommentService>>();
+        _commentService = new CommentService(_mockCommentRepository.Object, _mockLogger.Object);
     }
 
     [Fact]

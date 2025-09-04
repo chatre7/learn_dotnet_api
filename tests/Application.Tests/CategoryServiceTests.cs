@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.UseCases;
 using Domain.Entities;
 using Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Application.Tests;
@@ -9,12 +10,14 @@ namespace Application.Tests;
 public class CategoryServiceTests
 {
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
+    private readonly Mock<ILogger<CategoryService>> _mockLogger;
     private readonly CategoryService _categoryService;
 
     public CategoryServiceTests()
     {
         _mockCategoryRepository = new Mock<ICategoryRepository>();
-        _categoryService = new CategoryService(_mockCategoryRepository.Object);
+        _mockLogger = new Mock<ILogger<CategoryService>>();
+        _categoryService = new CategoryService(_mockCategoryRepository.Object, _mockLogger.Object);
     }
 
     [Fact]

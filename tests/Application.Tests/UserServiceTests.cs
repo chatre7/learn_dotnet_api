@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.UseCases;
 using Domain.Entities;
 using Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Application.Tests;
@@ -9,12 +10,14 @@ namespace Application.Tests;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _mockUserRepository;
+    private readonly Mock<ILogger<UserService>> _mockLogger;
     private readonly UserService _userService;
 
     public UserServiceTests()
     {
         _mockUserRepository = new Mock<IUserRepository>();
-        _userService = new UserService(_mockUserRepository.Object);
+        _mockLogger = new Mock<ILogger<UserService>>();
+        _userService = new UserService(_mockUserRepository.Object, _mockLogger.Object);
     }
 
     [Fact]

@@ -63,13 +63,16 @@ public class CategoryService : ICategoryService
         if (category == null)
         {
             _logger.LogWarning("Category not found with ID: {Id}", id);
-        }
-        else
-        {
-            _logger.LogInformation("Category found with ID: {Id}", id);
+            return null;
         }
         
-        return category; // Will be null if not found, which is handled by the API controller
+        _logger.LogInformation("Category found with ID: {Id}", id);
+        return new CategoryDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description
+        };
     }
 
     /// <summary>
