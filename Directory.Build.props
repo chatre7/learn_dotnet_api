@@ -1,9 +1,23 @@
 <Project>
   <PropertyGroup>
+    <!-- Coverlet Coverage Settings -->
     <CollectCoverage>true</CollectCoverage>
     <CoverletOutputFormat>lcov</CoverletOutputFormat>
     <CoverletOutput>./coverage/lcov.info</CoverletOutput>
     <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
     <Exclude>[coverlet.*]*</Exclude>
+    
+    <!-- Additional Coverage Exclusions -->
+    <ExcludeByFile>**/Migrations/**,**/obj/**,**/bin/**</ExcludeByFile>
+    
+    <!-- Coverage Thresholds -->
+    <Threshold>80</Threshold>
+    <ThresholdType>line</ThresholdType>
+    
+    <!-- Merge coverage results from multiple test projects -->
+    <MergeWith>./coverage</MergeWith>
+    
+    <!-- Include test assembly names for better reporting -->
+    <IncludeTestAssembly>false</IncludeTestAssembly>
   </PropertyGroup>
 </Project>

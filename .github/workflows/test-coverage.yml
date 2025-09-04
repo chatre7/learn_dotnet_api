@@ -43,7 +43,8 @@ jobs:
         dotnet test --no-build --verbosity normal \
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=lcov \
-          /p:CoverletOutput=./coverage/lcov.info
+          /p:CoverletOutput=./coverage/lcov.info \
+          /p:Threshold=80
 
     - name: Install lcov reporter
       run: |
@@ -56,8 +57,28 @@ jobs:
         genhtml ./coverage/lcov.info --output-directory ./coverage/report
         
         # Get coverage percentage
-        COVERAGE_PERCENT=$(lcov --summary ./coverage/lcov.info | grep "lines\|functions\|branches" | head -1 | awk '{print $2}')
-        echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
+        if [ -f "./coverage/lcov.info" ]; then
+          COVERAGE_PERCENT=$(lcov --summary ./coverage/lcov.info | grep -E "lines.*:" | awk '{print $2}')
+          echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
+        else
+          echo "COVERAGE_PERCENT=0%" >> $GITHUB_ENV
+        fi
+
+    - name: Check coverage threshold
+      run: |
+        # Extract the numeric part of the coverage percentage
+        if [ -f "./coverage/lcov.info" ]; then
+          COVERAGE_VALUE=$(echo "${{ env.COVERAGE_PERCENT }}" | sed 's/%//')
+          if (( $(echo "$COVERAGE_VALUE < 80" | bc -l) )); then
+            echo "Coverage is below the required threshold of 80%"
+            exit 1
+          else
+            echo "Coverage meets the required threshold"
+          fi
+        else
+          echo "No coverage report found"
+          exit 1
+        fi
 
     - name: Publish coverage report as artifact
       uses: actions/upload-artifact@v3
@@ -71,9 +92,9 @@ jobs:
         echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
         echo "Coverage report has been generated and uploaded as an artifact." >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
-        echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Lines | ${{ env.COVERAGE_PERCENT }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Coverage | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Lines | ${{ env.COVERAGE_PERCENT }} | ✅ Meets threshold (80%) |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "You can download the full HTML report from the Artifacts section of this workflow run." >> $GITHUB_STEP_SUMMARY
         echo "To view the HTML report, download the artifact and open index.html in your browser." >> $GITHUB_STEP_SUMMARY
