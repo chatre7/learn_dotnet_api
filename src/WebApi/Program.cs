@@ -15,6 +15,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 // Add MemoryCache
 builder.Services.AddMemoryCache();
 
@@ -40,6 +43,9 @@ app.UseMiddleware<AuthorizationMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+// Add health check endpoint
+app.MapHealthChecks("/health");
 
 // Log application startup
 app.Logger.LogInformation("Application starting up");

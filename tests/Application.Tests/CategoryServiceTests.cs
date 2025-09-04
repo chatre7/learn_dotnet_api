@@ -1,4 +1,5 @@
 using Application.DTOs;
+using Application.Interfaces;
 using Application.UseCases;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -11,13 +12,15 @@ public class CategoryServiceTests
 {
     private readonly Mock<ICategoryRepository> _mockCategoryRepository;
     private readonly Mock<ILogger<CategoryService>> _mockLogger;
+    private readonly Mock<ICacheService> _mockCacheService;
     private readonly CategoryService _categoryService;
 
     public CategoryServiceTests()
     {
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockLogger = new Mock<ILogger<CategoryService>>();
-        _categoryService = new CategoryService(_mockCategoryRepository.Object, _mockLogger.Object);
+        _mockCacheService = new Mock<ICacheService>();
+        _categoryService = new CategoryService(_mockCategoryRepository.Object, _mockLogger.Object, _mockCacheService.Object);
     }
 
     [Fact]
@@ -30,7 +33,15 @@ public class CategoryServiceTests
             new Category { Id = 2, Name = "Science", Description = "Science related posts" }
         };
 
-        _mockCategoryRepository.Setup(repo => repo.GetAllAsync()).ReturnsAsync(categories);
+        var categoryDtos = categories.Select(c => new CategoryDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description
+        }).ToList();
+
+        _mockCacheService.Setup(cache => cache.GetOrCreateAsync<IEnumerable<CategoryDto>>(It.IsAny<string>(), It.IsAny<Func<Task<IEnumerable<CategoryDto>>>>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync(categoryDtos);
 
         // Act
         var result = await _categoryService.GetAllCategoriesAsync();
@@ -38,7 +49,6 @@ public class CategoryServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Count());
-        _mockCategoryRepository.Verify(repo => repo.GetAllAsync(), Times.Once);
     }
 
     [Fact]
@@ -46,7 +56,10 @@ public class CategoryServiceTests
     {
         // Arrange
         var category = new Category { Id = 1, Name = "Technology", Description = "Tech related posts" };
-        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync(category);
+        var categoryDto = new CategoryDto { Id = 1, Name = "Technology", Description = "Tech related posts" };
+
+        _mockCacheService.Setup(cache => cache.GetOrCreateAsync<CategoryDto?>(It.IsAny<string>(), It.IsAny<Func<Task<CategoryDto?>>>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync(categoryDto);
 
         // Act
         var result = await _categoryService.GetCategoryByIdAsync(1);
@@ -54,21 +67,20 @@ public class CategoryServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal("Technology", result.Name);
-        _mockCategoryRepository.Verify(repo => repo.GetByIdAsync(1), Times.Once);
     }
 
     [Fact]
     public async Task GetCategoryByIdAsync_NonExistingCategory_ReturnsNull()
     {
         // Arrange
-        _mockCategoryRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((Category?)null);
+        _mockCacheService.Setup(cache => cache.GetOrCreateAsync<CategoryDto?>(It.IsAny<string>(), It.IsAny<Func<Task<CategoryDto?>>>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync((CategoryDto?)null);
 
         // Act
         var result = await _categoryService.GetCategoryByIdAsync(1);
 
         // Assert
         Assert.Null(result);
-        _mockCategoryRepository.Verify(repo => repo.GetByIdAsync(1), Times.Once);
     }
 
     [Fact]
@@ -87,6 +99,7 @@ public class CategoryServiceTests
         Assert.NotNull(result);
         Assert.Equal("Technology", result.Name);
         _mockCategoryRepository.Verify(repo => repo.CreateAsync(It.IsAny<Category>()), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("all_categories"), Times.Once);
     }
 
     [Fact]
@@ -108,6 +121,8 @@ public class CategoryServiceTests
         Assert.Equal("Updated Tech", result.Name);
         _mockCategoryRepository.Verify(repo => repo.GetByIdAsync(1), Times.Once);
         _mockCategoryRepository.Verify(repo => repo.UpdateAsync(It.IsAny<Category>()), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("category_1"), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("all_categories"), Times.Once);
     }
 
     [Fact]
@@ -122,5 +137,7 @@ public class CategoryServiceTests
         // Assert
         Assert.True(result);
         _mockCategoryRepository.Verify(repo => repo.DeleteAsync(1), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("category_1"), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("all_categories"), Times.Once);
     }
 }

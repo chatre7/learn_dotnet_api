@@ -1,4 +1,5 @@
 using Application.DTOs;
+using Application.Interfaces;
 using Application.UseCases;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -11,13 +12,15 @@ public class PostServiceTests
 {
     private readonly Mock<IPostRepository> _mockPostRepository;
     private readonly Mock<ILogger<PostService>> _mockLogger;
+    private readonly Mock<ICacheService> _mockCacheService;
     private readonly PostService _postService;
 
     public PostServiceTests()
     {
         _mockPostRepository = new Mock<IPostRepository>();
         _mockLogger = new Mock<ILogger<PostService>>();
-        _postService = new PostService(_mockPostRepository.Object, _mockLogger.Object);
+        _mockCacheService = new Mock<ICacheService>();
+        _postService = new PostService(_mockPostRepository.Object, _mockLogger.Object, _mockCacheService.Object);
     }
 
     [Fact]
@@ -30,7 +33,19 @@ public class PostServiceTests
             new Post { Id = 2, Title = "Second Post", Content = "Content of second post", UserId = 2, CategoryId = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
         };
 
-        _mockPostRepository.Setup(repo => repo.GetAllAsync()).ReturnsAsync(posts);
+        var postDtos = posts.Select(p => new PostDto
+        {
+            Id = p.Id,
+            Title = p.Title,
+            Content = p.Content,
+            UserId = p.UserId,
+            CategoryId = p.CategoryId,
+            CreatedAt = p.CreatedAt,
+            UpdatedAt = p.UpdatedAt
+        }).ToList();
+
+        _mockCacheService.Setup(cache => cache.GetOrCreateAsync<IEnumerable<PostDto>>(It.IsAny<string>(), It.IsAny<Func<Task<IEnumerable<PostDto>>>>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync(postDtos);
 
         // Act
         var result = await _postService.GetAllPostsAsync();
@@ -38,7 +53,6 @@ public class PostServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Count());
-        _mockPostRepository.Verify(repo => repo.GetAllAsync(), Times.Once);
     }
 
     [Fact]
@@ -46,7 +60,10 @@ public class PostServiceTests
     {
         // Arrange
         var post = new Post { Id = 1, Title = "First Post", Content = "Content of first post", UserId = 1, CategoryId = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
-        _mockPostRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync(post);
+        var postDto = new PostDto { Id = 1, Title = "First Post", Content = "Content of first post", UserId = 1, CategoryId = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+
+        _mockCacheService.Setup(cache => cache.GetOrCreateAsync<PostDto?>(It.IsAny<string>(), It.IsAny<Func<Task<PostDto?>>>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync(postDto);
 
         // Act
         var result = await _postService.GetPostByIdAsync(1);
@@ -54,21 +71,20 @@ public class PostServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal("First Post", result.Title);
-        _mockPostRepository.Verify(repo => repo.GetByIdAsync(1), Times.Once);
     }
 
     [Fact]
     public async Task GetPostByIdAsync_NonExistingPost_ReturnsNull()
     {
         // Arrange
-        _mockPostRepository.Setup(repo => repo.GetByIdAsync(1)).ReturnsAsync((Post?)null);
+        _mockCacheService.Setup(cache => cache.GetOrCreateAsync<PostDto?>(It.IsAny<string>(), It.IsAny<Func<Task<PostDto?>>>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync((PostDto?)null);
 
         // Act
         var result = await _postService.GetPostByIdAsync(1);
 
         // Assert
         Assert.Null(result);
-        _mockPostRepository.Verify(repo => repo.GetByIdAsync(1), Times.Once);
     }
 
     [Fact]
@@ -87,6 +103,7 @@ public class PostServiceTests
         Assert.NotNull(result);
         Assert.Equal("New Post", result.Title);
         _mockPostRepository.Verify(repo => repo.CreateAsync(It.IsAny<Post>()), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("all_posts"), Times.Once);
     }
 
     [Fact]
@@ -108,6 +125,8 @@ public class PostServiceTests
         Assert.Equal("Updated Post", result.Title);
         _mockPostRepository.Verify(repo => repo.GetByIdAsync(1), Times.Once);
         _mockPostRepository.Verify(repo => repo.UpdateAsync(It.IsAny<Post>()), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("post_1"), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("all_posts"), Times.Once);
     }
 
     [Fact]
@@ -122,5 +141,7 @@ public class PostServiceTests
         // Assert
         Assert.True(result);
         _mockPostRepository.Verify(repo => repo.DeleteAsync(1), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("post_1"), Times.Once);
+        _mockCacheService.Verify(cache => cache.Remove("all_posts"), Times.Once);
     }
 }

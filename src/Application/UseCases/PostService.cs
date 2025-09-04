@@ -3,6 +3,10 @@ using Application.Interfaces;
 using Application.Utilities;
 using Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Application.UseCases;
 
@@ -13,16 +17,20 @@ public class PostService : IPostService
 {
     private readonly IPostRepository _postRepository;
     private readonly ILogger<PostService> _logger;
+    private readonly ICacheService _cacheService;
+    private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(15);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PostService"/> class.
     /// </summary>
     /// <param name="postRepository">The post repository.</param>
     /// <param name="logger">The logger instance.</param>
-    public PostService(IPostRepository postRepository, ILogger<PostService> logger)
+    /// <param name="cacheService">The cache service instance.</param>
+    public PostService(IPostRepository postRepository, ILogger<PostService> logger, ICacheService cacheService)
     {
         _postRepository = postRepository;
         _logger = logger;
+        _cacheService = cacheService;
     }
 
     /// <summary>
@@ -32,18 +40,30 @@ public class PostService : IPostService
     public async Task<IEnumerable<PostDto>> GetAllPostsAsync()
     {
         _logger.LogInformation("Getting all posts");
-        var posts = await _postRepository.GetAllAsync();
-        _logger.LogInformation("Retrieved {Count} posts", posts.Count());
-        return posts.Select(p => new PostDto
-        {
-            Id = p.Id,
-            Title = p.Title,
-            Content = p.Content,
-            UserId = p.UserId,
-            CategoryId = p.CategoryId,
-            CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
-        });
+        
+        var cacheKey = "all_posts";
+        var posts = await _cacheService.GetOrCreateAsync<IEnumerable<PostDto>>(
+            cacheKey,
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for all posts, fetching from database");
+                var dbPosts = await _postRepository.GetAllAsync();
+                _logger.LogInformation("Retrieved {Count} posts from database", dbPosts.Count());
+                return dbPosts.Select(p => new PostDto
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    Content = p.Content,
+                    UserId = p.UserId,
+                    CategoryId = p.CategoryId,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt
+                }).ToList();
+            },
+            _cacheExpiration);
+
+        _logger.LogInformation("Returning {Count} posts", posts.Count());
+        return posts;
     }
 
     /// <summary>
@@ -54,24 +74,35 @@ public class PostService : IPostService
     public async Task<PostDto?> GetPostByIdAsync(int id)
     {
         _logger.LogInformation("Getting post by ID: {Id}", id);
-        var post = await _postRepository.GetByIdAsync(id);
-        if (post == null)
-        {
-            _logger.LogWarning("Post not found with ID: {Id}", id);
-            return null;
-        }
         
-        _logger.LogInformation("Post found with ID: {Id}", id);
-        return new PostDto
-        {
-            Id = post.Id,
-            Title = post.Title,
-            Content = post.Content,
-            UserId = post.UserId,
-            CategoryId = post.CategoryId,
-            CreatedAt = post.CreatedAt,
-            UpdatedAt = post.UpdatedAt
-        };
+        var cacheKey = $"post_{id}";
+        var post = await _cacheService.GetOrCreateAsync<PostDto?>(
+            cacheKey,
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for post {Id}, fetching from database", id);
+                var dbPost = await _postRepository.GetByIdAsync(id);
+                if (dbPost == null)
+                {
+                    _logger.LogWarning("Post not found with ID: {Id}", id);
+                    return null;
+                }
+                
+                _logger.LogInformation("Post found with ID: {Id}", id);
+                return new PostDto
+                {
+                    Id = dbPost.Id,
+                    Title = dbPost.Title,
+                    Content = dbPost.Content,
+                    UserId = dbPost.UserId,
+                    CategoryId = dbPost.CategoryId,
+                    CreatedAt = dbPost.CreatedAt,
+                    UpdatedAt = dbPost.UpdatedAt
+                };
+            },
+            _cacheExpiration);
+
+        return post;
     }
 
     /// <summary>
@@ -97,6 +128,9 @@ public class PostService : IPostService
 
         var createdPost = await _postRepository.CreateAsync(post);
         _logger.LogInformation("Post created successfully with ID: {Id}", createdPost.Id);
+
+        // Invalidate cache for all posts since we added a new one
+        _cacheService.Remove("all_posts");
 
         return new PostDto
         {
@@ -139,6 +173,10 @@ public class PostService : IPostService
         var updatedPost = await _postRepository.UpdateAsync(existingPost);
         _logger.LogInformation("Post updated successfully with ID: {Id}", updatedPost.Id);
 
+        // Invalidate cache for this specific post and all posts
+        _cacheService.Remove($"post_{id}");
+        _cacheService.Remove("all_posts");
+
         return new PostDto
         {
             Id = updatedPost.Id,
@@ -159,10 +197,14 @@ public class PostService : IPostService
     public async Task<bool> DeletePostAsync(int id)
     {
         _logger.LogInformation("Deleting post with ID: {Id}", id);
+        
         var result = await _postRepository.DeleteAsync(id);
         if (result)
         {
             _logger.LogInformation("Post deleted successfully with ID: {Id}", id);
+            // Invalidate cache for this specific post and all posts
+            _cacheService.Remove($"post_{id}");
+            _cacheService.Remove("all_posts");
         }
         else
         {
