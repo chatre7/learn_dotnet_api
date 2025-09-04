@@ -45,6 +45,20 @@ jobs:
           /p:CoverletOutputFormat=lcov \
           /p:CoverletOutput=./coverage/lcov.info
 
+    - name: Install lcov reporter
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lcov
+
+    - name: Generate coverage report
+      run: |
+        # Generate HTML report
+        genhtml ./coverage/lcov.info --output-directory ./coverage/report
+        
+        # Get coverage percentage
+        COVERAGE_PERCENT=$(lcov --summary ./coverage/lcov.info | grep "lines\|functions\|branches" | head -1 | awk '{print $2}')
+        echo "COVERAGE_PERCENT=$COVERAGE_PERCENT" >> $GITHUB_ENV
+
     - name: Publish coverage report as artifact
       uses: actions/upload-artifact@v3
       with:
@@ -52,8 +66,14 @@ jobs:
         path: ./coverage/
         retention-days: 30
 
-    - name: Generate coverage summary
+    - name: Display coverage summary
       run: |
         echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
         echo "Coverage report has been generated and uploaded as an artifact." >> $GITHUB_STEP_SUMMARY
-        echo "You can download it from the Artifacts section of this workflow run." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Lines | ${{ env.COVERAGE_PERCENT }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "You can download the full HTML report from the Artifacts section of this workflow run." >> $GITHUB_STEP_SUMMARY
+        echo "To view the HTML report, download the artifact and open index.html in your browser." >> $GITHUB_STEP_SUMMARY
