@@ -1,4 +1,5 @@
 using Application.Utilities;
+using System.Diagnostics;
 
 namespace Application.Tests.Utilities;
 
@@ -36,6 +37,13 @@ public class InputSanitizerTests
 
         // Act
         var result = InputSanitizer.SanitizeString(input);
+
+        // Debug output
+        Debug.WriteLine($"Input: '{input}'");
+        Debug.WriteLine($"Expected: '{expected}'");
+        Debug.WriteLine($"Actual: '{result}'");
+        Debug.WriteLine($"Expected length: {expected.Length}");
+        Debug.WriteLine($"Actual length: {result.Length}");
 
         // Assert
         Assert.Equal(expected, result);

@@ -1,5 +1,7 @@
+using Application.Interfaces;
 using Domain.Interfaces;
 using Infrastructure.Repositories;
+using Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -17,6 +19,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<Domain.Interfaces.ICategoryRepository, Repositories.CategoryRepository>();
         services.AddScoped<Domain.Interfaces.ICommentRepository, Repositories.CommentRepository>();
+        
+        // Register cache service
+        services.AddScoped<ICacheService, CacheService>();
         
         return services;
     }

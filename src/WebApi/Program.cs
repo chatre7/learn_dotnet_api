@@ -15,6 +15,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add MemoryCache
+builder.Services.AddMemoryCache();
+
 // Add application services
 builder.Services.AddApplicationServices();
 

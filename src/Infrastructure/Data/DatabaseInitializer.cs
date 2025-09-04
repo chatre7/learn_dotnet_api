@@ -72,73 +72,72 @@ public static class DatabaseInitializer
         using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync();
         
-        // Check if test data already exists
-        var userExists = await connection.QuerySingleOrDefaultAsync<int?>(
-            "SELECT Id FROM Users WHERE Email = @Email", 
-            new { Email = "test@example.com" });
+        // Use a transaction to ensure atomicity
+        using var transaction = await connection.BeginTransactionAsync();
         
-        if (userExists.HasValue)
+        try
         {
-            // Data already exists, return the existing IDs
-            var existingUserId = userExists.Value;
-            var existingCategoryId = await connection.QuerySingleAsync<int>(
-                "SELECT Id FROM Categories WHERE Name = @Name", 
-                new { Name = "Test Category" });
-            var existingPostId = await connection.QuerySingleAsync<int>(
-                "SELECT Id FROM Posts WHERE Title = @Title AND UserId = @UserId", 
-                new { Title = "Test Post", UserId = existingUserId });
+            // Clear existing data in correct order to avoid foreign key constraints
+            await connection.ExecuteAsync("DELETE FROM Comments", transaction: transaction);
+            await connection.ExecuteAsync("DELETE FROM Posts", transaction: transaction);
+            await connection.ExecuteAsync("DELETE FROM Categories", transaction: transaction);
+            await connection.ExecuteAsync("DELETE FROM Users", transaction: transaction);
             
-            return (existingUserId, existingCategoryId, existingPostId);
+            // Small delay to help with concurrency issues
+            await Task.Delay(10);
+            
+            // Insert test user
+            var userSql = @"
+                INSERT INTO Users (Name, Email, CreatedAt, UpdatedAt) 
+                VALUES (@Name, @Email, @CreatedAt, @UpdatedAt) 
+                RETURNING Id";
+            
+            var userId = await connection.QuerySingleAsync<int>(userSql, new 
+            {
+                Name = "Test User",
+                Email = "test@example.com",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }, transaction: transaction);
+            
+            // Insert test category
+            var categorySql = @"
+                INSERT INTO Categories (Name, Description) 
+                VALUES (@Name, @Description) 
+                RETURNING Id";
+            
+            var categoryId = await connection.QuerySingleAsync<int>(categorySql, new 
+            {
+                Name = "Test Category",
+                Description = "Test Description"
+            }, transaction: transaction);
+            
+            // Insert test post
+            var postSql = @"
+                INSERT INTO Posts (Title, Content, UserId, CategoryId, CreatedAt, UpdatedAt) 
+                VALUES (@Title, @Content, @UserId, @CategoryId, @CreatedAt, @UpdatedAt) 
+                RETURNING Id";
+            
+            var postId = await connection.QuerySingleAsync<int>(postSql, new 
+            {
+                Title = "Test Post",
+                Content = "Test Content",
+                UserId = userId,
+                CategoryId = categoryId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }, transaction: transaction);
+            
+            // Commit the transaction
+            await transaction.CommitAsync();
+            
+            return (userId, categoryId, postId);
         }
-        
-        // Clear existing data
-        await connection.ExecuteAsync("DELETE FROM Comments");
-        await connection.ExecuteAsync("DELETE FROM Posts");
-        await connection.ExecuteAsync("DELETE FROM Categories");
-        await connection.ExecuteAsync("DELETE FROM Users");
-        
-        // Insert test user
-        var userSql = @"
-            INSERT INTO Users (Name, Email, CreatedAt, UpdatedAt) 
-            VALUES (@Name, @Email, @CreatedAt, @UpdatedAt) 
-            RETURNING Id";
-        
-        var userId = await connection.QuerySingleAsync<int>(userSql, new 
+        catch
         {
-            Name = "Test User",
-            Email = "test@example.com",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        });
-        
-        // Insert test category
-        var categorySql = @"
-            INSERT INTO Categories (Name, Description) 
-            VALUES (@Name, @Description) 
-            RETURNING Id";
-        
-        var categoryId = await connection.QuerySingleAsync<int>(categorySql, new 
-        {
-            Name = "Test Category",
-            Description = "Test Description"
-        });
-        
-        // Insert test post
-        var postSql = @"
-            INSERT INTO Posts (Title, Content, UserId, CategoryId, CreatedAt, UpdatedAt) 
-            VALUES (@Title, @Content, @UserId, @CategoryId, @CreatedAt, @UpdatedAt) 
-            RETURNING Id";
-        
-        var postId = await connection.QuerySingleAsync<int>(postSql, new 
-        {
-            Title = "Test Post",
-            Content = "Test Content",
-            UserId = userId,
-            CategoryId = categoryId,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        });
-        
-        return (userId, categoryId, postId);
+            // Rollback the transaction in case of error
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }
