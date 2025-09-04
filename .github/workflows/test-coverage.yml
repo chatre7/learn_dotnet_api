@@ -39,7 +39,9 @@ jobs:
       run: dotnet build --no-restore
 
     - name: Run tests with coverage and publish results
+      id: test_step
       run: |
+        echo "Running tests..."
         dotnet test --no-build --verbosity normal \
           --logger "trx;LogFileName=test-results.trx" \
           --logger "console;verbosity=detailed" \
@@ -47,14 +49,25 @@ jobs:
           /p:CoverletOutputFormat=lcov \
           /p:CoverletOutput=./coverage/lcov.info \
           /p:Threshold=80
+        echo "Test execution completed"
       continue-on-error: true
+
+    - name: Check test results
+      run: |
+        echo "Checking for test results files..."
+        find . -name "test-results.trx" -type f
+        echo "Checking for coverage files..."
+        find . -name "lcov.info" -type f
+        ls -la ./coverage/ || echo "Coverage directory not found"
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results
-        path: "**/test-results.trx"
+        path: |
+          **/test-results.trx
+          **/coverage/
         retention-days: 30
 
     - name: Publish test results
